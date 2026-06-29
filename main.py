@@ -20,7 +20,7 @@ def serve_frontend():
 
 
 @app.post("/chat")
-async def chat(req: ChatRequest):
+def chat(req: ChatRequest):
     def event_stream():
         for event in run_agent(req.message, req.history):
             data = json.dumps(event)
