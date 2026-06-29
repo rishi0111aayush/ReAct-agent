@@ -1,5 +1,7 @@
 import ast
+import concurrent.futures
 import io
+import subprocess
 import sys
 import re
 import requests
@@ -28,6 +30,15 @@ def web_search(query: str) -> str:
 
 def code_exec(code: str) -> str:
     """Execute Python code in a restricted sandbox and return stdout."""
+    # AST validation: reject any attribute access (blocks __class__.__bases__ escape)
+    try:
+        tree = ast.parse(code, mode='exec')
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Attribute):
+                return "Error: attribute access is not allowed in the sandbox"
+    except SyntaxError as e:
+        return f"Syntax error: {e}"
+
     safe_globals = {
         "__builtins__": {
             "print": print, "range": range, "len": len, "int": int,
@@ -41,7 +52,7 @@ def code_exec(code: str) -> str:
     old_stdout = sys.stdout
     sys.stdout = stdout_capture
     try:
-        exec(code, safe_globals)  # noqa: S102
+        exec(compile(tree, "<sandbox>", "exec"), safe_globals)  # noqa: S102
         output = stdout_capture.getvalue()
         return output.strip() if output.strip() else "(no output)"
     except Exception as e:
@@ -52,14 +63,18 @@ def code_exec(code: str) -> str:
 
 def calculator(expr: str) -> str:
     """Safely evaluate a mathematical expression."""
-    # Allow only safe math characters
     if not re.match(r'^[\d\s\+\-\*\/\(\)\.\%\*\*]+$', expr):
         return "Error: only basic math operators allowed (+, -, *, /, **, %, parentheses)"
     try:
-        # Use compile + eval with empty globals for safety
-        code = compile(expr, "<string>", "eval")
-        result = eval(code, {"__builtins__": {}})  # noqa: S307
-        return str(result)
+        result = subprocess.run(  # noqa: S603
+            [sys.executable, "-c", f"print(eval(compile({repr(expr)}, '<string>', 'eval'), {{'__builtins__': {{}}}}) )"],
+            capture_output=True, text=True, timeout=2
+        )
+        if result.returncode != 0:
+            return f"Error: {result.stderr.strip()}"
+        return result.stdout.strip()
+    except subprocess.TimeoutExpired:
+        return "Error: expression took too long to evaluate"
     except Exception as e:
         return f"Error: {e}"
 
