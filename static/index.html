@@ -1,1 +1,515 @@
-<!-- MiniGPT frontend -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniGPT</title>
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #050816;
+      --surface:   #0d1224;
+      --border:    #1e2a4a;
+      --cyan:      #00e5ff;
+      --purple:    #7c3aed;
+      --pink:      #e040fb;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --success:   #10b981;
+      --warning:   #f59e0b;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .logo {
+      font-size: 1.3rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--cyan), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 1px;
+    }
+    .model-badge {
+      font-size: 0.7rem;
+      background: rgba(0,229,255,0.1);
+      color: var(--cyan);
+      border: 1px solid rgba(0,229,255,0.3);
+      border-radius: 20px;
+      padding: 2px 10px;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      margin-left: auto;
+      box-shadow: 0 0 6px var(--success);
+    }
+    .status-dot.thinking {
+      background: var(--warning);
+      box-shadow: 0 0 6px var(--warning);
+      animation: pulse 1s infinite;
+    }
+    #status-text {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* ── Main layout ── */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Chat panel ── */
+    .chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+    }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .message {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      line-height: 1.6;
+      font-size: 0.9rem;
+      animation: fadeSlideIn 0.3s ease;
+    }
+    .message.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, rgba(124,58,237,0.3), rgba(0,229,255,0.15));
+      border: 1px solid rgba(124,58,237,0.4);
+    }
+    .message.assistant {
+      align-self: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .message.assistant pre {
+      margin-top: 8px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    .message.assistant code:not(pre code) {
+      background: rgba(0,229,255,0.1);
+      color: var(--cyan);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+
+    .input-area {
+      padding: 16px 24px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    textarea {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: none;
+      min-height: 44px;
+      max-height: 120px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: var(--cyan); }
+    textarea::placeholder { color: var(--muted); }
+
+    button#send-btn {
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 600;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: opacity 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+    button#send-btn:hover { opacity: 0.85; }
+    button#send-btn:active { transform: scale(0.97); }
+    button#send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Brain panel ── */
+    .brain-panel {
+      width: 380px;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .brain-panel.active::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-left: 2px solid transparent;
+      background: linear-gradient(var(--bg), var(--bg)) padding-box,
+                  linear-gradient(180deg, var(--cyan), var(--purple), var(--pink)) border-box;
+      pointer-events: none;
+      animation: borderGlow 2s ease infinite alternate;
+    }
+    .brain-header {
+      padding: 14px 20px;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .brain-header .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--purple);
+    }
+    .brain-steps {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .step {
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      animation: fadeSlideIn 0.35s ease;
+      word-break: break-word;
+    }
+    .step .step-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .step.thought {
+      background: rgba(124,58,237,0.12);
+      border: 1px solid rgba(124,58,237,0.3);
+    }
+    .step.thought .step-label { color: var(--purple); }
+
+    .step.action {
+      background: rgba(0,229,255,0.08);
+      border: 1px solid rgba(0,229,255,0.3);
+    }
+    .step.action .step-label { color: var(--cyan); }
+    .step.action.running {
+      animation: fadeSlideIn 0.35s ease, toolPulse 1s ease infinite alternate;
+    }
+
+    .step.observation {
+      background: rgba(16,185,129,0.08);
+      border: 1px solid rgba(16,185,129,0.25);
+    }
+    .step.observation .step-label { color: var(--success); }
+
+    .step.error-step {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+    }
+    .step.error-step .step-label { color: #f87171; }
+
+    .empty-brain {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 24px;
+    }
+    .empty-brain .icon { font-size: 2rem; opacity: 0.3; }
+
+    /* ── Animations ── */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    @keyframes toolPulse {
+      from { box-shadow: 0 0 0 0 rgba(0,229,255,0.3); }
+      to   { box-shadow: 0 0 12px 4px rgba(0,229,255,0.15); }
+    }
+    @keyframes borderGlow {
+      from { opacity: 0.6; }
+      to   { opacity: 1; }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">&#9670; MiniGPT</span>
+  <span class="model-badge">llama3 · local</span>
+  <span id="status-text">Ready</span>
+  <span class="status-dot" id="status-dot"></span>
+</header>
+
+<div class="main">
+
+  <!-- Chat panel -->
+  <div class="chat-panel">
+    <div class="messages" id="messages">
+      <div class="message assistant">
+        Hello! I'm MiniGPT — a local AI agent with access to web search, code execution, and a calculator.
+        Ask me anything about tech, programming, AI, or science.
+      </div>
+    </div>
+    <div class="input-area">
+      <textarea id="input" placeholder="Ask me anything about tech..." rows="1"></textarea>
+      <button id="send-btn">Send &#9654;</button>
+    </div>
+  </div>
+
+  <!-- Brain panel -->
+  <div class="brain-panel" id="brain-panel">
+    <div class="brain-header">
+      <span class="dot"></span>
+      Agent Brain
+    </div>
+    <div class="brain-steps" id="brain-steps">
+      <div class="empty-brain">
+        <span class="icon">&#129504;</span>
+        Agent internals will appear here as it thinks
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const messagesEl = document.getElementById('messages');
+const brainSteps = document.getElementById('brain-steps');
+const brainPanel = document.getElementById('brain-panel');
+const inputEl    = document.getElementById('input');
+const sendBtn    = document.getElementById('send-btn');
+const statusDot  = document.getElementById('status-dot');
+const statusText = document.getElementById('status-text');
+
+let history = [];
+let currentActionStep = null;
+
+function setStatus(thinking) {
+  if (thinking) {
+    statusDot.classList.add('thinking');
+    statusText.textContent = 'Thinking...';
+    brainPanel.classList.add('active');
+  } else {
+    statusDot.classList.remove('thinking');
+    statusText.textContent = 'Ready';
+    brainPanel.classList.remove('active');
+  }
+}
+
+function addMessage(role, text) {
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+
+  // Render markdown-ish: code blocks and inline code
+  let html = escapeHtml(text)
+    .replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+      const highlighted = lang && hljs.getLanguage(lang)
+        ? hljs.highlight(unescapeHtml(code), { language: lang }).value
+        : hljs.highlightAuto(unescapeHtml(code)).value;
+      return `<pre><code class="hljs">${highlighted}</code></pre>`;
+    })
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\n/g, '<br>');
+  div.innerHTML = html;
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  return div;
+}
+
+function addBrainStep(type, content) {
+  // Remove empty-brain placeholder
+  const empty = brainSteps.querySelector('.empty-brain');
+  if (empty) empty.remove();
+
+  const div = document.createElement('div');
+  div.className = `step ${type}`;
+
+  const labels = {
+    thought:     '&#x1F4AD; Thought',
+    action:      '&#x1F527; Action',
+    observation: '&#x1F441; Observation',
+    'error-step':'&#x26A0; Error',
+  };
+
+  div.innerHTML = `<div class="step-label">${labels[type] || type}</div><div>${escapeHtml(content)}</div>`;
+  brainSteps.appendChild(div);
+  brainSteps.scrollTop = brainSteps.scrollHeight;
+  return div;
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+function unescapeHtml(str) {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"');
+}
+
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+
+  inputEl.value = '';
+  sendBtn.disabled = true;
+  setStatus(true);
+
+  // Clear brain panel for new query
+  brainSteps.innerHTML = '';
+
+  // Add user message
+  addMessage('user', text);
+
+  // Add empty assistant bubble for streaming
+  const aMsg = addMessage('assistant', '');
+  let fullAnswer = '';
+
+  try {
+    const resp = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, history }),
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop(); // keep incomplete chunk
+
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const json = line.slice(5).trim();
+        if (!json) continue;
+
+        let event;
+        try { event = JSON.parse(json); } catch { continue; }
+
+        if (event.type === 'thought') {
+          addBrainStep('thought', event.content);
+        } else if (event.type === 'action') {
+          currentActionStep = addBrainStep('action', event.content);
+          currentActionStep.classList.add('running');
+        } else if (event.type === 'observation') {
+          if (currentActionStep) {
+            currentActionStep.classList.remove('running');
+            currentActionStep = null;
+          }
+          addBrainStep('observation', event.content.slice(0, 300) + (event.content.length > 300 ? '...' : ''));
+        } else if (event.type === 'answer_token') {
+          fullAnswer += event.content;
+          // Re-render with simple text (fast path during streaming)
+          aMsg.textContent = fullAnswer;
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        } else if (event.type === 'done') {
+          // Final render with code highlighting
+          aMsg.innerHTML = '';
+          const finalEl = addMessage('assistant', event.content);
+          aMsg.replaceWith(finalEl);
+          history.push({ user: text, assistant: event.content });
+        } else if (event.type === 'error') {
+          addBrainStep('error-step', event.content);
+          aMsg.textContent = 'Sorry, something went wrong. Check that Ollama is running.';
+        }
+      }
+    }
+  } catch (e) {
+    aMsg.textContent = `Connection error: ${e.message}`;
+  }
+
+  setStatus(false);
+  sendBtn.disabled = false;
+  inputEl.focus();
+}
+
+sendBtn.addEventListener('click', sendMessage);
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// Auto-resize textarea
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+});
+</script>
+</body>
+</html>
