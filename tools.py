@@ -1,11 +1,23 @@
+"""
+tools.py — Tool implementations for the Boozo.ai ReAct agent.
+
+Tools:
+  web_search  — DuckDuckGo HTML scraping (no API key)
+  code_exec   — AST-validated Python sandbox
+  calculator  — Subprocess-isolated math evaluator
+  rag_ingest  — Ingest URLs or text into ChromaDB knowledge base
+  rag_search  — Semantic search over ingested documents
+"""
 import ast
-import concurrent.futures
 import io
+import re
 import subprocess
 import sys
-import re
+
+import chromadb
 import requests
 from bs4 import BeautifulSoup
+from chromadb.utils import embedding_functions
 
 
 def web_search(query: str) -> str:
@@ -79,10 +91,109 @@ def calculator(expr: str) -> str:
         return f"Error: {e}"
 
 
+# ── RAG: in-memory vector store ──────────────────────────────────────────────
+_chroma_client = chromadb.Client()
+_embed_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
+    model_name="all-MiniLM-L6-v2"
+)
+_rag_collection = _chroma_client.get_or_create_collection(
+    name="boozo_rag", embedding_function=_embed_fn
+)
+_rag_doc_counter = [0]  # mutable counter for unique IDs
+
+
+def rag_ingest(source: str) -> str:
+    """
+    Ingest text or a URL into the RAG knowledge base.
+    Pass plain text directly, or a URL starting with http/https.
+    """
+    try:
+        if source.startswith("http://") or source.startswith("https://"):
+            headers = {"User-Agent": "Mozilla/5.0"}
+            resp = requests.get(source, headers=headers, timeout=10)
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for tag in soup(["script", "style", "nav", "footer"]):
+                tag.decompose()
+            text = soup.get_text(separator=" ", strip=True)
+            label = source
+        else:
+            text = source
+            label = f"text-{_rag_doc_counter[0]}"
+
+        # Split into ~300-char chunks with 50-char overlap
+        chunk_size, overlap = 300, 50
+        chunks, start = [], 0
+        while start < len(text):
+            chunks.append(text[start: start + chunk_size])
+            start += chunk_size - overlap
+
+        for i, chunk in enumerate(chunks):
+            _rag_collection.upsert(
+                documents=[chunk],
+                ids=[f"doc-{_rag_doc_counter[0]}-chunk-{i}"],
+                metadatas=[{"source": label}],
+            )
+        _rag_doc_counter[0] += 1
+        return f"Ingested {len(chunks)} chunks from '{label}' into knowledge base."
+    except Exception as e:
+        return f"Ingest error: {e}"
+
+
+def rag_search(query: str) -> str:
+    """Search the RAG knowledge base for chunks relevant to the query."""
+    try:
+        count = _rag_collection.count()
+        if count == 0:
+            return "Knowledge base is empty. Use rag_ingest(text_or_url) first."
+        results = _rag_collection.query(
+            query_texts=[query],
+            n_results=min(3, count),
+        )
+        docs = results.get("documents", [[]])[0]
+        metas = results.get("metadatas", [[]])[0]
+        if not docs:
+            return "No relevant results found."
+        parts = []
+        for doc, meta in zip(docs, metas):
+            src = meta.get("source", "unknown")
+            parts.append(f"[source: {src}]\n{doc}")
+        return "\n\n---\n\n".join(parts)
+    except Exception as e:
+        return f"Search error: {e}"
+
+
+def plot(json_spec: str) -> str:
+    """
+    Render an interactive chart in the UI.
+    json_spec must be a JSON object with keys:
+      type    — "bar" | "line" | "pie" | "doughnut" | "radar"
+      title   — chart title string
+      labels  — list of category strings
+      datasets — list of {label, data} objects
+    Example: {"type":"bar","title":"Sales","labels":["Q1","Q2"],"datasets":[{"label":"Revenue","data":[100,200]}]}
+    """
+    import json as _json
+    try:
+        spec = _json.loads(json_spec)
+        required = {"type", "labels", "datasets"}
+        missing = required - spec.keys()
+        if missing:
+            return f"Plot error: missing keys {missing}"
+        if spec["type"] not in {"bar", "line", "pie", "doughnut", "radar"}:
+            return f"Plot error: unsupported type '{spec['type']}'. Use bar/line/pie/doughnut/radar."
+        return f"CHART:{_json.dumps(spec)}"
+    except Exception as e:
+        return f"Plot error: {e}"
+
+
 TOOLS = {
     "web_search": web_search,
     "code_exec": code_exec,
     "calculator": calculator,
+    "rag_ingest": rag_ingest,
+    "rag_search": rag_search,
+    "plot": plot,
 }
 
 

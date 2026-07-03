@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Concepts in Boozo.ai</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:     #050816;
+      --s1:     #0d1224;
+      --s2:     #111827;
+      --border: #1e2a4a;
+      --cyan:   #00e5ff;
+      --purple: #7c3aed;
+      --pink:   #e040fb;
+      --green:  #10b981;
+      --amber:  #f59e0b;
+      --red:    #ef4444;
+      --blue:   #3b82f6;
+      --orange: #f97316;
+      --text:   #e2e8f0;
+      --muted:  #64748b;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      padding: 0 0 80px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 60px 20px 40px;
+      background: radial-gradient(ellipse at top, rgba(124,58,237,0.15) 0%, transparent 70%);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 60px;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(0,229,255,0.1);
+      border: 1px solid rgba(0,229,255,0.3);
+      border-radius: 999px;
+      padding: 5px 16px;
+      font-size: 0.78rem;
+      color: var(--cyan);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    .hero h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 50%, var(--pink) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+    .hero p { color: var(--muted); font-size: 1rem; max-width: 540px; margin: 0 auto; }
+
+    /* ── Nav ── */
+    .nav {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 8px; padding: 0 20px; margin-bottom: 60px;
+    }
+    .nav a {
+      text-decoration: none;
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+    .nav a:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    /* ── Concept block ── */
+    .concept {
+      max-width: 860px;
+      margin: 0 auto 70px;
+      padding: 0 20px;
+      opacity: 0;
+      transform: translateY(36px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    .concept.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Concept header ── */
+    .c-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .c-num {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 12px;
+      white-space: nowrap;
+    }
+    .c-icon {
+      font-size: 2rem;
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .c-title { font-size: 1.4rem; font-weight: 800; }
+    .c-tagline { font-size: 0.85rem; color: var(--muted); margin-top: 3px; }
+
+    /* ── Analogy box ── */
+    .analogy {
+      border-radius: 14px;
+      padding: 18px 22px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      line-height: 1.7;
+      border-left: 4px solid;
+    }
+    .analogy .label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    /* ── Info card ── */
+    .icard {
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 14px;
+      font-size: 0.88rem;
+      line-height: 1.72;
+      color: #94a3b8;
+    }
+    .icard b { color: var(--text); }
+    .icard code {
+      background: rgba(0,229,255,0.08);
+      color: var(--cyan);
+      padding: 1px 7px;
+      border-radius: 5px;
+      font-size: 0.85em;
+    }
+
+    /* ── Grid 2 col ── */
+    .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    @media(max-width:580px){ .g2 { grid-template-columns: 1fr; } }
+
+    .gcard {
+      background: var(--s2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .gcard .gt { font-size: 0.9rem; font-weight: 700; margin-bottom: 6px; }
+    .gcard .gd { font-size: 0.82rem; color: #94a3b8; line-height: 1.55; }
+
+    /* ── Visual flow strip ── */
+    .flow-strip {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      background: var(--s2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 14px;
+    }
+    .fs-box {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .fs-arrow { color: var(--muted); font-size: 1rem; }
+
+    /* ── Token demo ── */
+    .token-demo {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      background: var(--s2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+    }
+    .tok {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    /* ── Temperature dial ── */
+    .temp-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .temp-card {
+      flex: 1; min-width: 130px;
+      background: var(--s2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .temp-card .tv { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+    .temp-card .tl { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .temp-card .td { font-size: 0.78rem; color: #94a3b8; }
+
+    /* ── Context window bar ── */
+    .ctx-bar-wrap {
+      background: var(--s2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 14px;
+    }
+    .ctx-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 10px; display: flex; justify-content: space-between; }
+    .ctx-bar { height: 10px; border-radius: 999px; background: var(--border); overflow: hidden; margin-bottom: 8px; }
+    .ctx-fill { height: 100%; border-radius: 999px; background: linear-gradient(to right, var(--cyan), var(--purple)); transition: width 1.5s ease; }
+    .ctx-legend { display: flex; gap: 16px; font-size: 0.76rem; color: var(--muted); }
+    .ctx-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+
+    /* ── Scratchpad live sim ── */
+    .scratch-sim {
+      background: #0a0f1f;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      line-height: 1.8;
+      margin-bottom: 14px;
+      min-height: 120px;
+    }
+    .s-thought  { color: var(--cyan); }
+    .s-action   { color: var(--amber); }
+    .s-observe  { color: var(--green); }
+    .s-cursor   { display: inline-block; width: 8px; height: 14px; background: var(--cyan); animation: blink 1s step-end infinite; vertical-align: middle; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* ── Divider ── */
+    .divider {
+      width: 100%; max-width: 860px; margin: 0 auto 60px;
+      padding: 0 20px;
+    }
+    .divider hr { border: none; height: 1px; background: linear-gradient(to right, transparent, var(--border), transparent); }
+
+    /* ── Used-in badge ── */
+    .used-in {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(16,185,129,0.08);
+      border: 1px solid rgba(16,185,129,0.25);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 0.75rem;
+      color: var(--green);
+      margin-bottom: 14px;
+    }
+
+    /* ── Color themes ── */
+    .t-cyan   { color: var(--cyan); }
+    .t-purple { color: #a78bfa; }
+    .t-pink   { color: var(--pink); }
+    .t-green  { color: var(--green); }
+    .t-amber  { color: var(--amber); }
+    .t-red    { color: #f87171; }
+    .t-blue   { color: var(--blue); }
+    .t-orange { color: var(--orange); }
+
+    .bg-cyan   { background: rgba(0,229,255,0.07);   border-left-color: var(--cyan); }
+    .bg-purple { background: rgba(124,58,237,0.08);  border-left-color: var(--purple); }
+    .bg-pink   { background: rgba(224,64,251,0.07);  border-left-color: var(--pink); }
+    .bg-green  { background: rgba(16,185,129,0.07);  border-left-color: var(--green); }
+    .bg-amber  { background: rgba(245,158,11,0.07);  border-left-color: var(--amber); }
+    .bg-blue   { background: rgba(59,130,246,0.07);  border-left-color: var(--blue); }
+    .bg-orange { background: rgba(249,115,22,0.07);  border-left-color: var(--orange); }
+
+    .ic-cyan   { background: rgba(0,229,255,0.1); }
+    .ic-purple { background: rgba(124,58,237,0.12); }
+    .ic-pink   { background: rgba(224,64,251,0.1); }
+    .ic-green  { background: rgba(16,185,129,0.1); }
+    .ic-amber  { background: rgba(245,158,11,0.1); }
+    .ic-blue   { background: rgba(59,130,246,0.1); }
+    .ic-orange { background: rgba(249,115,22,0.1); }
+    .ic-red    { background: rgba(239,68,68,0.1); }
+  </style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">Boozo.ai — AI Concepts Guide</div>
+  <h1>Every AI Idea Used in This Project</h1>
+  <p>Explained simply — like you're hearing it for the first time</p>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="#llm">LLM</a>
+  <a href="#tokens">Tokens</a>
+  <a href="#prompt">Prompt Engineering</a>
+  <a href="#react">ReAct</a>
+  <a href="#scratchpad">Scratchpad</a>
+  <a href="#tools">Tool Use</a>
+  <a href="#context">Context Window</a>
+  <a href="#temperature">Temperature</a>
+  <a href="#rag">RAG</a>
+  <a href="#embeddings">Embeddings</a>
+  <a href="#streaming">Streaming</a>
+  <a href="#fallback">Fallback Chain</a>
+  <a href="flowchart.html">Flow</a>
+  <a href="concepts.html">Concepts</a>
+</nav>
+
+
+<!-- ══ 1. LLM ══ -->
+<div class="concept" id="llm">
+  <div class="c-header">
+    <span class="c-num">Concept 01</span>
+    <div class="c-icon ic-cyan">🧠</div>
+    <div>
+      <div class="c-title t-cyan">LLM — Large Language Model</div>
+      <div class="c-tagline">The giant AI brain that answers questions</div>
+    </div>
+  </div>
+  <div class="used-in">Used in: agent.py — call_groq, call_cerebras, call_gemini, call_ollama</div>
+
+  <div class="analogy bg-cyan">
+    <span class="label t-cyan">Simple analogy</span>
+    Imagine a student who read <b>every book, website, and article ever written</b>. You ask them a question and they answer from memory. That student is an LLM. Groq, Gemini, Ollama, Cerebras — all LLMs, just different students.
+  </div>
+
+  <div class="icard">
+    An LLM is a <b>neural network</b> trained on billions of text examples. During training it learns one simple skill: <b>predict the next word</b>. But do that millions of times at high quality and it starts to seem like it "understands" language. It doesn't think — it predicts patterns.<br><br>
+    In Boozo.ai, the LLM is the core engine. Every question you ask goes to an LLM. The LLM reads the prompt and produces the next words — which could be a Thought, an Action, or a Final Answer.
+  </div>
+
+  <div class="g2">
+    <div class="gcard">
+      <div class="gt t-cyan">Models in Boozo.ai</div>
+      <div class="gd">
+        Groq: <b>llama-3.3-70b</b><br>
+        Cerebras: <b>llama-3.3-70b</b><br>
+        Gemini: <b>gemini-2.0-flash</b><br>
+        Ollama: <b>llama3.2</b> (local)
+      </div>
+    </div>
+    <div class="gcard">
+      <div class="gt t-cyan">What 70b means</div>
+      <div class="gd">70 <b>billion parameters</b> — like 70 billion tiny knobs tuned during training. More knobs = smarter model. The llama-3.3-70b is very capable.</div>
+    </div>
+  </div>
+</div>
+<div class="divider"><hr></div>
+
+
+<!-- ══ 2. TOKENS ══ -->
+<div class="concept" id="tokens">
+  <div class="c-header">
+    <span class="c-num">Concept 02</span>
+    <div class="c-icon ic-purple">🔤</div>
+    <div>
+      <div class="c-title t-purple">Tokens — How LLMs Count Text</div>
+      <div class="c-tagline">LLMs don't read letters or words — they read chunks</div>
+    </div>
+  </div>
+  <div class="used-in">Used in: agent.py — NUM_CTX = 8192, token estimate (len(prompt) // 4)</div>
+
+  <div class="analogy bg-purple">
+    <span class="label t-purple">Simple analogy</span>
+    Instead of reading letter by letter, LLMs break text into small chunks called <b>tokens</b>. Think of tokens like Lego bricks. "Python" might be 1 token. "programming" might be 2. A space + "is" = 1 token. On average, <b>1 token ≈ 4 characters</b> or about <b>0.75 words</b>.
+  </div>
+
+  <div class="icard">The sentence <b>"Hello, how are you?"</b> broken into tokens:</div>
+
+  <div class="token-demo">
+    <span class="tok" style="background:rgba(0,229,255,0.12);color:var(--cyan)">Hello</span>
+    <span class="tok" style="background:rgba(124,58,237,0.12);color:#a78bfa">,</span>
+    <span class="tok" style="background:rgba(16,185,129,0.12);color:var(--green)"> how</span>
+    <span class="tok" style="background:rgba(245,158,11,0.12);color:var(--amber)"> are</span>
+    <span class="tok" style="background:rgba(224,64,251,0.12);color:var(--pink)"> you</span>
+    <span class="tok" style="background:rgba(59,130,246,0.12);color:var(--blue)">?</span>
+  </div>
+
+  <div class="icard">
+    <b>Why tokens matter:</b> LLMs have a maximum number of tokens they can process at once (the context window). Boozo.ai estimates token usage with <code>len(prompt) // 4</code> and shows it in the right panel bar so you can see how full the context window is.
+  </div>
+</div>
+<div class="divider"><hr></div>
+
+
+<!-- ══ 3. PROMPT ENGINEERING ══ -->
+<div class="concept" id="prompt">
+  <div class="c-header">
+    <span class="c-num">Concept 03</span>
+    <div class="c-icon ic-amber">✍️</div>
+    <div>
+      <div class="c-title t-amber">Prompt Engineering</div>
+      <div class="c-tagline">The art of writing instructions that make the LLM behave correctly</div>
+    </div>
+  </div>
+  <div class="used-in">Used in: prompts.py — SYSTEM_PROMPT, REACT_TEMPLATE</div>
+
+  <div class="analogy bg-amber">
+    <span class="label t-amber">Simple analogy</span>
+    An LLM is like a very smart but obedient genie. If you say "give me something to eat" it might give you mud. If you say "give me a hot cheese pizza with extra toppings" it gives you exactly that. <b>Prompt engineering = writing clear, specific instructions</b> so the genie does exactly what you want.
+  </div>
+
+  <div class="icard">
+    Boozo.ai uses <b>two prompts</b>:<br><br>
+    <b>1. System Prompt</b> (prompts.py) — tells the LLM WHO it is, WHAT tools it has, and HOW to respond. It's like the employee handbook.<br><br>
+    <b>2. ReAct Template</b> — the actual message sent each iteration. It includes the system prompt + conversation history + user question + scratchpad. It's the full briefing the LLM gets before answering.
+  </div>
+
+  <div class="flow-strip">
+    <div class="fs-box" style="color:var(--cyan)">System Prompt</div>
+    <span class="fs-arrow">+</span>
+    <div class="fs-box" style="color:#a78bfa">Chat History</div>
+    <span class="fs-arrow">+</span>
+    <div class="fs-box" style="color:var(--amber)">Your Question</div>
+    <span class="fs-arrow">+</span>
+    <div class="fs-box" style="color:var(--green)">Scratchpad</div>
+    <span class="fs-arrow">=</span>
+    <div class="fs-box" style="color:var(--pink)">Full Prompt sent to LLM</div>
+  </div>
+</div>
+<div class="divider"><hr></div>
+
+
+<!-- ══ 4. REACT ══ -->
+<div class="concept" id="react">
+  <div class="c-header">
+    <span class="c-num">Concept 04</span>
+    <div class="c-icon ic-pink">🔄</div>
+    <div>
+      <div class="c-title t-pink">ReAct — Reason + Act</div>
+      <div class="c-tagline">The pattern that turns a chatbot into an agent</div>
+    </div>
+  </div>
+  <div class="used-in">Used in: agent.py — run_agent() loop, MAX_ITERATIONS = 5</div>
+
+  <div class="analogy bg-pink">
+    <span class="label t-pink">Simple analogy</span>
+    Normal chatbot: You ask → it answers. Done.<br>
+    ReAct agent: You ask → it <b>thinks</b> → it <b>acts</b> (uses a tool) → it <b>thinks again</b> → uses another tool → thinks → <b>answers</b>. Like a detective who investigates before concluding.
+  </div>
+
+  <div class="icard">
+    <b>ReAct was invented by researchers at Google in 2022.</b> The key insight: if you ask an LLM to write its reasoning step by step AND let it call external tools, it becomes dramatically more accurate than just answering directly.<br><br>
+    In Boozo.ai, the loop runs up to <b>5 iterations</b>. Each iteration: build prompt → call LLM → parse output → if tool needed run it → repeat. When the LLM writes <code>Final Answer:</code> the loop stops and the answer streams to you.
+  </div>
+
+  <div class="g2">
+    <div class="gcard">
+      <div class="gt" style="color:var(--pink)">Without ReAct</div>
+      <div class="gd">LLM answers from memory only. Can hallucinate (make up facts). Can't search, can't calculate, can't draw charts.</div>
+    </div>
+    <div class="gcard">
+      <div class="gt" style="color:var(--green)">With ReAct (Boozo.ai)</div>
+      <div class="gd">LLM plans, searches the web, runs code, checks results, then gives a verified answer. Much more accurate.</div>
+    </div>
+  </div>
+</div>
+<div class="divider"><hr></div>
+
+
+<!-- ══ 5. SCRATCHPAD ══ -->
+<div class="concept" id="scratchpad">
+  <div class="c-header">
+    <span class="c-num">Concept 05</span>
+    <div class="c-icon ic-green">📝</div>
+    <div>
+      <div class="c-title t-green">Scratchpad — The Agent's Rough Work</div>
+      <div class="c-tagline">Fake memory between LLM calls</div>
+    </div>
+  </div>
+  <div class="used-in">Used in: agent.py — scratchpad string, grows each iteration</div>
+
+  <div class="analogy bg-green">
+    <span class="label t-green">Simple analogy</span>
+    Every time you call the LLM it forgets everything. It's like waking up with amnesia every 5 seconds. The scratchpad is the <b>note you paste in front of it</b> saying "here's what you already did." Without it, the agent would repeat the same step forever.
+  </div>
+
+  <div class="icard">Here is what a real scratchpad looks like after 2 iterations:</div>
+
+  <div class="scratch-sim" id="scratch-anim">
+    <span class="s-cursor"></span>
+  </div>
+
+  <div class="icard">
+    The scratchpad starts empty (<code>scratchpad = ""</code>) and grows after each step. It gets pasted into the prompt every time. This is the core trick that gives the agent "memory" across multiple LLM calls. You can watch it grow live in Boozo.ai's right panel.
+  </div>
+</div>
+<div class="divider"><hr></div>
+
+
+<!-- ══ 6. TOOL USE ══ -->
+<div class="concept" id="tools">
+  <div class="c-header">
+    <span class="c-num">Concept 06</span>
+    <div class="c-icon ic-orange">🛠️</div>
+    <div>
+      <div class="c-title t-orange">Tool Use — Agent's Hands</div>
+      <div class="c-tagline">How the agent interacts with the real world</div>
+    </div>
+  </div>
+  <div class="used-in">Used in: tools.py — web_search, code_exec, calculator, rag_ingest, rag_search, plot</div>
+
+  <div class="analogy bg-orange">
+    <span class="label t-orange">Simple analogy</span>
+    The LLM is a brain in a jar — brilliant but can't touch anything. Tools are like robot arms attached to the jar. The brain says "search for X" → the arm goes and does it → brings back the result. The brain now knows things it couldn't have known from training alone.
+  </div>
+
+  <div class="icard">
+    The LLM writes <code>Action: web_search(latest Python version)</code> in its output.<br>
+    Your code (<code>dispatch_tool</code> in tools.py) reads this, finds the <code>web_search</code> function, runs it, and pastes the result back as an <code>Observation</code> in the scratchpad.<br><br>
+    <b>Boozo.ai's 6 tools:</b>
+  </div>
+
+  <div class="g2">
+    <div class="gcard"><div class="gt" style="color:var(--cyan)">web_search</div><div class="gd">Scrapes DuckDuckGo HTML — no API key. Returns top 4 result snippets.</div></div>
+    <div class="gcard"><div class="gt" style="color:var(--purple)">code_exec</div><div class="gd">Runs Python in a sandbox. AST-validated. Returns stdout output.</div></div>
+    <div class="gcard"><div class="gt" style="color:var(--amber)">calculator</div><div class="gd">Safe maths only. Runs in subprocess with 2s OS kill timeout.</div></div>
+    <div class="gcard"><div class="gt" style="color:var(--green)">rag_ingest</div><div class="gd">Stores URLs or text into ChromaDB vector database.</div></div>
+    <div class="gcard"><div class="gt" style="color:var(--pink)">rag_search</div><div class="gd">Semantic search over stored documents. Returns top 3 chunks.</div></div>
+    <div class="gcard"><div class="gt" style="color:var(--orange)">plot</div><div class="gd">Takes JSON chart spec → renders interactive Chart.js chart in chat.</div></div>
+  </div>
+</div>
+<div class="divider"><hr></div>
+
+
+<!-- ══ 7. CONTEXT WINDOW ══ -->
+<div class="concept" id="context">
+  <div class="c-header">
+    <span class="c-num">Concept 07</span>
+    <div class="c-icon ic-blue">📏</div>
+    <div>
+      <div class="c-title t-blue">Context Window — LLM's Short-Term Memory</div>
+      <div class="c-tagline">The maximum amount of text the LLM can see at once</div>
+    </div>
+  </div>
+  <div class="used-in">Used in: agent.py — NUM_CTX = 8192, tokens event in SSE stream</div>
+
+  <div class="analogy bg-blue">
+    <span class="label t-blue">Simple analogy</span>
+    Imagine you can only hold 10 pages of notes in front of you at once. If your conversation grows to 11 pages, the first page falls off the back. The LLM literally cannot see text beyond its context window — it's like those pages don't exist.
+  </div>
+
+  <div class="ctx-bar-wrap">
+    <div class="ctx-label">
+      <span>Context Window (8,192 tokens)</span>
+      <span id="ctx-pct">filling...</span>
+    </div>
+    <div class="ctx-bar"><div class="ctx-fill" id="ctx-fill" style="width:0%"></div></div>
+    <div class="ctx-legend">
+      <span><span class="ctx-dot" style="background:var(--cyan)"></span>Prompt used</span>
+      <span><span class="ctx-dot" style="background:var(--border)"></span>Available</span>
+    </div>
+  </div>
+
+  <div class="icard">
+    Boozo.ai estimates how many tokens the current prompt uses (<code>len(prompt) // 4</code>) and shows it in the right panel bar. If you have a long conversation + long scratchpad, the bar fills up. When full, older history must be trimmed or the LLM starts "forgetting" the start of the conversation.
+  </div>
+</div>
+<div class="divider"><hr></div>
+
+
+<!-- ══ 8. TEMPERATURE ══ -->
+<div class="concept" id="temperature">
+  <div class="c-header">
+    <span class="c-num">Concept 08</span>
+    <div class="c-icon ic-red">🌡️</div>
+    <div>
+      <div class="c-title t-red">Temperature — Creativity Knob</div>
+      <div class="c-tagline">Controls how random or focused the LLM's answers are</div>
+    </div>
+  </div>
+  <div class="used-in">Used in: agent.py — "temperature": 0.3 in every LLM call</div>
+
+  <div class="analogy bg-amber">
+    <span class="label t-amber">Simple analogy</span>
+    Think of temperature like a creativity dial on a robot writer. Turn it to 0 — robot writes the most boring, predictable sentences possible. Turn it to 1 — robot writes wild, creative, sometimes nonsense poetry. For an AI assistant, you want it <b>focused but not robotic</b>.
+  </div>
+
+  <div class="temp-row">
+    <div class="temp-card" style="border-color:rgba(59,130,246,0.4)">
+      <div class="tv t-blue">0.0</div>
+      <div class="tl t-blue">Robotic</div>
+      <div class="td">Always picks the single most likely next word. Repetitive and safe.</div>
+    </div>
+    <div class="temp-card" style="border-color:rgba(0,229,255,0.4); background:rgba(0,229,255,0.05)">
+      <div class="tv t-cyan">0.3</div>
+      <div class="tl t-cyan">Boozo.ai uses this</div>
+      <div class="td">Mostly focused but allows some natural variation. Best for technical answers.</div>
+    </div>
+    <div class="temp-card" style="border-color:rgba(245,158,11,0.4)">
+      <div class="tv t-amber">0.7</div>
+      <div class="tl t-amber">Creative</div>
+      <div class="td">Good for writing stories, brainstorming, poetry. Less precise.</div>
+    </div>
+    <div class="temp-card" style="border-color:rgba(239,68,68,0.4)">
+      <div class="tv t-red">1.0+</div>
+      <div class="tl t-red">Wild</div>
+      <div class="td">Random, surprising, often incoherent. Avoid for factual tasks.</div>
+    </div>
+  </div>
+</div>
+<div class="divider"><hr></div>
+
+
+<!-- ══ 9. RAG ══ -->
+<div class="concept" id="rag">
+  <div class="c-header">
+    <span class="c-num">Concept 09</span>
+    <div class="c-icon ic-green">📚</div>
+    <div>
+      <div class="c-title t-green">RAG — Retrieval Augmented Generation</div>
+      <div class="c-tagline">Give the LLM a personal, searchable notebook</div>
+    </div>
+  </div>
+  <div class="used-in">Used in: tools.py — rag_ingest, rag_search, ChromaDB, sentence-transformers</div>
+
+  <div class="analogy bg-green">
+    <span class="label t-green">Simple analogy</span>
+    The LLM only knows what it learned during training (which ended months ago). RAG is like giving it a personal notebook. You write stuff in the notebook. When you ask a question, the LLM checks the notebook first, then answers. Now it can know <b>things that weren't in its training data</b>.
+  </div>
+
+  <div class="icard">
+    <b>How it works in Boozo.ai:</b><br><br>
+    Step 1 — <b>Ingest</b>: You tell the agent to "remember" a URL or text. It scrapes the content, splits it into 300-character chunks, converts each chunk into a number vector (embedding), and stores everything in <b>ChromaDB</b>.<br><br>
+    Step 2 — <b>Retrieve</b>: You ask a question. The agent converts your question into a vector too, then finds the stored chunks whose vectors are <b>closest</b> in meaning. Top 3 chunks are given to the LLM as extra context.<br><br>
+    Step 3 — <b>Generate</b>: The LLM now has real, specific information to answer from — not just training data guesses.
+  </div>
+
+  <div class="flow-strip">
+    <div class="fs-box" style="color:var(--green)">Your Doc / URL</div>
+    <span class="fs-arrow">→</span>
+    <div class="fs-box">Chunk (300 chars)</div>
+    <span class="fs-arrow">→</span>
+    <div class="fs-box" style="color:var(--purple)">Embed (384 numbers)</div>
+    <span class="fs-arrow">→</span>
+    <div class="fs-box" style="color:var(--cyan)">Store in ChromaDB</div>
+    <span class="fs-arrow">→</span>
+    <div class="fs-box" style="color:var(--amber)">Search by similarity</div>
+    <span class="fs-arrow">→</span>
+    <div class="fs-box" style="color:var(--pink)">Feed to LLM</div>
+  </div>
+</div>
+<div class="divider"><hr></div>
+
+
+<!-- ══ 10. EMBEDDINGS ══ -->
+<div class="concept" id="embeddings">
+  <div class="c-header">
+    <span class="c-num">Concept 10</span>
+    <div class="c-icon ic-purple">🔢</div>
+    <div>
+      <div class="c-title t-purple">Vector Embeddings</div>
+      <div class="c-tagline">Turning words into numbers so computers understand meaning</div>
+    </div>
+  </div>
+  <div class="used-in">Used in: tools.py — SentenceTransformerEmbeddingFunction, all-MiniLM-L6-v2</div>
+
+  <div class="analogy bg-purple">
+    <span class="label t-purple">Simple analogy</span>
+    Imagine plotting words on a map. "Dog" and "puppy" would be placed very close together. "Dog" and "aeroplane" would be far apart. An embedding model creates this map — converting each word/sentence into a list of numbers that represents <b>where it sits on the meaning map</b>. Closer numbers = similar meaning.
+  </div>
+
+  <div class="icard">
+    The model used: <b>all-MiniLM-L6-v2</b> (80MB, runs on your CPU). It converts any sentence into a list of <b>384 numbers</b> called a vector. When you search, your query also becomes 384 numbers. ChromaDB then measures <b>cosine similarity</b> (the angle between two number lists) to find the closest match.<br><br>
+    <b>Why this matters:</b> You can search for "programming language" and find documents about "Python coding" even if those exact words don't appear — because their meaning vectors are close.
+  </div>
+
+  <div class="g2">
+    <div class="gcard">
+      <div class="gt t-purple">"Python is fun"</div>
+      <div class="gd" style="font-family:monospace;font-size:0.78rem;color:var(--muted)">[0.23, -0.11, 0.87, 0.04, ...]<br>384 numbers total</div>
+    </div>
+    <div class="gcard">
+      <div class="gt t-purple">"I love coding"</div>
+      <div class="gd" style="font-family:monospace;font-size:0.78rem;color:var(--muted)">[0.21, -0.09, 0.84, 0.06, ...]<br>Very similar numbers = similar meaning</div>
+    </div>
+  </div>
+</div>
+<div class="divider"><hr></div>
+
+
+<!-- ══ 11. STREAMING ══ -->
+<div class="concept" id="streaming">
+  <div class="c-header">
+    <span class="c-num">Concept 11</span>
+    <div class="c-icon ic-cyan">📡</div>
+    <div>
+      <div class="c-title t-cyan">Token Streaming — Letter by Letter Output</div>
+      <div class="c-tagline">Why text appears gradually instead of all at once</div>
+    </div>
+  </div>
+  <div class="used-in">Used in: agent.py — answer_token loop, main.py — StreamingResponse + SSE</div>
+
+  <div class="analogy bg-cyan">
+    <span class="label t-cyan">Simple analogy</span>
+    Old way: order a pizza, wait 40 minutes, it arrives all at once. Streaming: a chef cooks in front of you and hands you each slice as it comes out of the oven. You start eating at minute 5 instead of minute 40. <b>Streaming feels faster even if total time is the same</b>.
+  </div>
+
+  <div class="icard">
+    Boozo.ai streams at two levels:<br><br>
+    <b>1. SSE stream (main.py)</b> — FastAPI's <code>StreamingResponse</code> sends each agent event (thought, action, observation) immediately as a <code>data: {...}\n\n</code> message.<br><br>
+    <b>2. Token stream (agent.py)</b> — When the final answer is ready, it loops through each character and yields an <code>answer_token</code> event:
+    <code>for char in answer: yield type: "answer_token", content: char</code><br><br>
+    The browser's JavaScript reads the SSE stream and appends each character to the chat bubble in real time.
+  </div>
+</div>
+<div class="divider"><hr></div>
+
+
+<!-- ══ 12. FALLBACK CHAIN ══ -->
+<div class="concept" id="fallback">
+  <div class="c-header">
+    <span class="c-num">Concept 12</span>
+    <div class="c-icon ic-amber">⛓️</div>
+    <div>
+      <div class="c-title t-amber">Fallback Chain — Always Stay Online</div>
+      <div class="c-tagline">Automatic backup providers when the first one fails</div>
+    </div>
+  </div>
+  <div class="used-in">Used in: agent.py — call_llm() with try/except chain</div>
+
+  <div class="analogy bg-amber">
+    <span class="label t-amber">Simple analogy</span>
+    You call your first taxi. No answer. You call the second. Busy. You call the third. It comes. You always get to your destination — the user never sees the failed calls. That's a fallback chain. Boozo.ai has <b>4 taxis</b>.
+  </div>
+
+  <div class="flow-strip">
+    <div class="fs-box" style="color:var(--cyan)">Try Groq</div>
+    <span class="fs-arrow">fail →</span>
+    <div class="fs-box" style="color:var(--orange)">Try Cerebras</div>
+    <span class="fs-arrow">fail →</span>
+    <div class="fs-box" style="color:var(--pink)">Try Gemini</div>
+    <span class="fs-arrow">fail →</span>
+    <div class="fs-box" style="color:var(--muted)">Ollama (local)</div>
+    <span class="fs-arrow">→</span>
+    <div class="fs-box" style="color:var(--green)">Always get answer</div>
+  </div>
+
+  <div class="icard">
+    Each try is wrapped in a <code>try/except</code> block. If Groq throws any exception (rate limit, timeout, server error) the except catches it silently and tries Cerebras. The user sees which provider was actually used via the <b>model badge</b> in the header.
+  </div>
+
+  <div class="g2">
+    <div class="gcard">
+      <div class="gt t-cyan">Cloud providers (Groq, Cerebras, Gemini)</div>
+      <div class="gd">Fast. Free tier. Run on NVIDIA H100 clusters. Latency: 0.5–3 seconds.</div>
+    </div>
+    <div class="gcard">
+      <div class="gt" style="color:var(--muted)">Ollama (local)</div>
+      <div class="gd">Runs on your own machine. Completely private. No internet needed. Slower (15–60s) but always available.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Back links -->
+<div style="text-align:center;padding:0 20px;margin-top:20px">
+  <a href="flowchart.html" style="color:var(--cyan);font-size:0.9rem;text-decoration:none;border:1px solid var(--border);padding:10px 22px;border-radius:999px;margin:6px;display:inline-block" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)'">Step-by-Step Flow</a>
+  <a href="concepts.html" style="color:var(--purple);font-size:0.9rem;text-decoration:none;border:1px solid var(--border);padding:10px 22px;border-radius:999px;margin:6px;display:inline-block" onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor='var(--border)'">MCP & Architecture</a>
+  <a href="/" style="color:var(--green);font-size:0.9rem;text-decoration:none;border:1px solid var(--border);padding:10px 22px;border-radius:999px;margin:6px;display:inline-block" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'">Back to Boozo.ai</a>
+</div>
+
+<script>
+  // Scroll-in animation
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.concept').forEach(el => observer.observe(el));
+
+  // Context window bar animation
+  const ctxFill = document.getElementById('ctx-fill');
+  const ctxPct  = document.getElementById('ctx-pct');
+  const ctxObs  = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        setTimeout(() => {
+          ctxFill.style.width = '34%';
+          ctxPct.textContent  = '~2,800 / 8,192 tokens used';
+        }, 300);
+        ctxObs.disconnect();
+      }
+    });
+  }, { threshold: 0.5 });
+  ctxObs.observe(document.getElementById('ctx-fill'));
+
+  // Scratchpad typewriter animation
+  const scratchLines = [
+    { cls: 's-thought',  text: 'Thought: The user asked about Python version. I should search the web.' },
+    { cls: 's-action',   text: 'Action: web_search(latest Python version 2024)' },
+    { cls: 's-observe',  text: 'Observation: Python 3.13 released October 2024. Adds improved error messages.' },
+    { cls: 's-thought',  text: 'Thought: I now have the answer. No more tools needed.' },
+  ];
+  const scratchEl = document.getElementById('scratch-anim');
+  let lineIdx = 0, charIdx = 0, started = false;
+
+  function typeNext() {
+    if (lineIdx >= scratchLines.length) return;
+    const line = scratchLines[lineIdx];
+    if (charIdx === 0) {
+      const span = document.createElement('span');
+      span.className = line.cls;
+      span.id = 'cur-line';
+      scratchEl.insertBefore(span, scratchEl.querySelector('.s-cursor'));
+    }
+    const curLine = document.getElementById('cur-line');
+    curLine.textContent += line.text[charIdx];
+    charIdx++;
+    if (charIdx >= line.text.length) {
+      scratchEl.insertBefore(document.createTextNode('\n'), scratchEl.querySelector('.s-cursor'));
+      curLine.removeAttribute('id');
+      lineIdx++; charIdx = 0;
+      setTimeout(typeNext, 400);
+    } else {
+      setTimeout(typeNext, 22);
+    }
+  }
+
+  const scratchObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting && !started) { started = true; setTimeout(typeNext, 600); scratchObs.disconnect(); }
+    });
+  }, { threshold: 0.4 });
+  scratchObs.observe(scratchEl);
+</script>
+
+</body>
+</html>

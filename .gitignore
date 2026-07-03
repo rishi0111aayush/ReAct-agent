@@ -1,11 +1,36 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
+
+# Virtual environments
 .venv/
 venv/
 env/
+
+# Environment / secrets
 .env
-.claude/
+.env.*
+!.env.example
+
+# Logs
+*.log
+uvicorn.log
+
+# Build artefacts
 *.egg-info/
 dist/
 build/
+
+# IDE
+.vscode/
+.idea/
+
+# Claude / agent internals
+.claude/
+.agents/
+skills-lock.json
+
+# ChromaDB persistent data (if switched to disk-based)
+chroma_data/

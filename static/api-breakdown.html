@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>API Breakdown — Boozo.ai</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --bg:#050816;--s1:#0d1224;--s2:#111827;--border:#1e2a4a;
+      --cyan:#00e5ff;--purple:#7c3aed;--pink:#e040fb;--green:#10b981;
+      --amber:#f59e0b;--red:#ef4444;--blue:#3b82f6;--orange:#f97316;
+      --text:#e2e8f0;--muted:#64748b;
+    }
+    body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;padding-bottom:80px;}
+
+    /* HERO */
+    .hero{text-align:center;padding:60px 20px 44px;background:radial-gradient(ellipse at top,rgba(0,229,255,0.1) 0%,transparent 65%);border-bottom:1px solid var(--border);margin-bottom:54px;}
+    .badge{display:inline-block;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.25);border-radius:999px;padding:5px 16px;font-size:.75rem;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px;}
+    .hero h1{font-size:2.2rem;font-weight:800;background:linear-gradient(135deg,var(--cyan),var(--purple),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;}
+    .hero p{color:var(--muted);font-size:.95rem;max-width:520px;margin:0 auto;}
+
+    /* NAV */
+    .nav{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:0 20px;margin-bottom:54px;}
+    .nav a{text-decoration:none;background:var(--s1);border:1px solid var(--border);border-radius:999px;padding:6px 15px;font-size:.78rem;color:var(--muted);transition:all .2s;}
+    .nav a:hover{border-color:var(--cyan);color:var(--cyan);}
+
+    /* SECTION */
+    .sec{max-width:880px;margin:0 auto 64px;padding:0 20px;opacity:0;transform:translateY(32px);transition:opacity .5s,transform .5s;}
+    .sec.on{opacity:1;transform:translateY(0);}
+    .sec-head{display:flex;align-items:center;gap:14px;margin-bottom:22px;}
+    .sec-icon{font-size:1.9rem;width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .sec-title{font-size:1.35rem;font-weight:800;}
+    .sec-sub{font-size:.83rem;color:var(--muted);margin-top:3px;}
+    .num{font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:999px;padding:4px 12px;white-space:nowrap;}
+
+    /* CARDS */
+    .card{background:var(--s1);border:1.5px solid var(--border);border-radius:14px;padding:20px 24px;margin-bottom:14px;font-size:.88rem;line-height:1.75;color:#94a3b8;}
+    .card b{color:var(--text);}
+    .hbox{border-radius:12px;padding:16px 20px;margin-bottom:14px;font-size:.88rem;line-height:1.7;border-left:4px solid;}
+    .hbox b{color:var(--text);}
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+    @media(max-width:560px){.g2{grid-template-columns:1fr;}}
+    .gc{background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:16px 18px;}
+    .gc .gt{font-size:.9rem;font-weight:700;margin-bottom:7px;}
+    .gc .gd{font-size:.81rem;color:#94a3b8;line-height:1.55;}
+
+    /* DIVIDER */
+    .div{max-width:880px;margin:0 auto 54px;padding:0 20px;}
+    .div hr{border:none;height:1px;background:linear-gradient(to right,transparent,var(--border),transparent);}
+
+    /* CODE BLOCK */
+    .code{background:#080e1e;border:1.5px solid var(--border);border-radius:12px;padding:18px 22px;font-family:'Courier New',monospace;font-size:.82rem;line-height:1.85;margin-bottom:14px;overflow-x:auto;}
+    .code .kw{color:var(--pink);}
+    .code .fn{color:var(--cyan);}
+    .code .st{color:var(--green);}
+    .code .cm{color:var(--muted);}
+    .code .nu{color:var(--amber);}
+    .code .cl{color:#a78bfa;}
+
+    /* FLOW */
+    .flow{display:flex;flex-direction:column;align-items:center;gap:0;margin-bottom:14px;}
+    .fnode{width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:13px;padding:14px 20px;display:flex;align-items:center;gap:12px;font-size:.87rem;}
+    .fnode .fi{font-size:1.3rem;flex-shrink:0;}
+    .fnode .fl{font-weight:700;}
+    .fnode .fd{color:var(--muted);font-size:.79rem;margin-top:1px;}
+    .farr{display:flex;flex-direction:column;align-items:center;padding:2px 0;}
+    .fline{width:2px;height:22px;background:linear-gradient(to bottom,var(--border),var(--cyan));}
+    .fhead{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid var(--cyan);}
+    .flabel{font-size:.7rem;color:var(--cyan);font-weight:700;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2);border-radius:999px;padding:2px 10px;margin-bottom:2px;}
+
+    /* PIPE */
+    .pipe{display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:14px;}
+    .pbox{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:.81rem;font-weight:600;}
+    .parr{color:var(--muted);font-size:1rem;}
+
+    /* TOKEN ANIMATION */
+    .token-stream{background:#080e1e;border:1.5px solid var(--border);border-radius:12px;padding:18px 22px;font-family:'Courier New',monospace;font-size:.88rem;min-height:54px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:1px;align-items:center;}
+    .tok{padding:3px 6px;border-radius:5px;transition:opacity .3s;}
+    .tok-cursor{display:inline-block;width:8px;height:16px;background:var(--cyan);animation:blink 1s step-end infinite;vertical-align:middle;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+    /* SSE DEMO */
+    .sse-box{background:#080e1e;border:1.5px solid var(--border);border-radius:12px;padding:18px 22px;font-family:'Courier New',monospace;font-size:.8rem;line-height:1.9;margin-bottom:14px;min-height:120px;}
+    .sse-line{opacity:0;transform:translateX(-8px);transition:opacity .3s,transform .3s;}
+    .sse-line.in{opacity:1;transform:translateX(0);}
+    .sse-key{color:var(--cyan);}
+    .sse-val{color:var(--green);}
+    .sse-str{color:var(--amber);}
+
+    /* HTTP pill */
+    .method{display:inline-block;padding:3px 10px;border-radius:6px;font-size:.75rem;font-weight:800;letter-spacing:.06em;margin-right:8px;}
+    .get{background:rgba(16,185,129,0.15);color:var(--green);border:1px solid rgba(16,185,129,0.35);}
+    .post{background:rgba(59,130,246,0.15);color:var(--blue);border:1px solid rgba(59,130,246,0.35);}
+
+    /* Colour helpers */
+    .t-cyan{color:var(--cyan);} .t-purple{color:#a78bfa;} .t-pink{color:var(--pink);}
+    .t-green{color:var(--green);} .t-amber{color:var(--amber);} .t-blue{color:var(--blue);}
+    .t-orange{color:var(--orange);} .t-red{color:#f87171);}
+    .ic-cyan{background:rgba(0,229,255,0.09);}  .ic-purple{background:rgba(124,58,237,0.11);}
+    .ic-pink{background:rgba(224,64,251,0.09);}  .ic-green{background:rgba(16,185,129,0.09);}
+    .ic-amber{background:rgba(245,158,11,0.09);}  .ic-blue{background:rgba(59,130,246,0.09);}
+    .ic-orange{background:rgba(249,115,22,0.09);}
+    .bg-cyan{background:rgba(0,229,255,0.06);border-left-color:var(--cyan);}
+    .bg-purple{background:rgba(124,58,237,0.07);border-left-color:var(--purple);}
+    .bg-green{background:rgba(16,185,129,0.06);border-left-color:var(--green);}
+    .bg-amber{background:rgba(245,158,11,0.06);border-left-color:var(--amber);}
+    .bg-blue{background:rgba(59,130,246,0.06);border-left-color:var(--blue);}
+    .bg-pink{background:rgba(224,64,251,0.06);border-left-color:var(--pink);}
+    .bg-orange{background:rgba(249,115,22,0.06);border-left-color:var(--orange);}
+    code{background:rgba(0,229,255,0.08);color:var(--cyan);padding:1px 7px;border-radius:5px;font-size:.85em;}
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">Boozo.ai — Full API Breakdown</div>
+  <h1>How Every Request Works</h1>
+  <p>GET, POST, tokens, SSE, Pydantic, FastAPI — all explained from zero</p>
+</div>
+
+<nav class="nav">
+  <a href="#what-api">What is API</a>
+  <a href="#get-post">GET vs POST</a>
+  <a href="#routes">3 Routes</a>
+  <a href="#pydantic">Pydantic</a>
+  <a href="#chat-flow">Chat Flow</a>
+  <a href="#token-gen">Token Generation</a>
+  <a href="#sse">SSE Stream</a>
+  <a href="#full-life">Full Lifecycle</a>
+  <a href="/">Back to Boozo.ai</a>
+</nav>
+
+
+<!-- ══ 1. WHAT IS AN API ══ -->
+<div class="sec" id="what-api">
+  <div class="sec-head">
+    <span class="num">01</span>
+    <div class="sec-icon ic-cyan">🍽️</div>
+    <div><div class="sec-title t-cyan">What is an API?</div><div class="sec-sub">Application Programming Interface — the waiter between your browser and the server</div></div>
+  </div>
+
+  <div class="hbox bg-cyan">
+    <b>Restaurant analogy:</b><br><br>
+    You (browser) sit at a table. The kitchen (server + agent) has all the food (data + AI).<br>
+    You can't walk into the kitchen. You give your order to the <b>waiter (API)</b>.<br>
+    The waiter goes to the kitchen, gets the food, and brings it back to you.<br><br>
+    The waiter speaks a specific language — you can't just shout random things. You must use the <b>menu (endpoints)</b> with specific formats.
+  </div>
+
+  <div class="g2">
+    <div class="gc"><div class="gt t-cyan">Without API</div><div class="gd">Browser would have to directly access Python code, databases, files. Impossible. Insecure.</div></div>
+    <div class="gc"><div class="gt t-cyan">With API (FastAPI)</div><div class="gd">Browser sends a clean HTTP request to a URL. FastAPI receives it, processes it, sends back a response. Clean and safe.</div></div>
+  </div>
+
+  <div class="card">
+    <b>In Boozo.ai:</b> FastAPI is the API layer. Your browser talks to <code>localhost:8000</code>. Everything goes through FastAPI — loading the page, sending messages, getting responses.
+  </div>
+</div>
+<div class="div"><hr></div>
+
+
+<!-- ══ 2. GET vs POST ══ -->
+<div class="sec" id="get-post">
+  <div class="sec-head">
+    <span class="num">02</span>
+    <div class="sec-icon ic-green">📮</div>
+    <div><div class="sec-title t-green">GET vs POST</div><div class="sec-sub">Two different ways to send a request</div></div>
+  </div>
+
+  <div class="hbox bg-green">
+    <b>Simple rule:</b><br>
+    <b>GET</b> = "give me something" — just fetching, no data sent<br>
+    <b>POST</b> = "here is something, process it" — sending data to the server
+  </div>
+
+  <div class="g2">
+    <div class="gc" style="border-color:rgba(16,185,129,0.3)">
+      <div class="gt"><span class="method get">GET</span>Fetching</div>
+      <div class="gd">
+        Like reading a menu — you ask to see something, nothing changes on the server.<br><br>
+        <b>In Boozo.ai:</b><br>
+        <code>GET /</code> → get the HTML page<br>
+        <code>GET /health</code> → check if server is alive<br><br>
+        Data goes in the <b>URL</b>. Visible in browser bar.
+      </div>
+    </div>
+    <div class="gc" style="border-color:rgba(59,130,246,0.3)">
+      <div class="gt"><span class="method post">POST</span>Sending data</div>
+      <div class="gd">
+        Like placing an order — you send data to the server and it does something with it.<br><br>
+        <b>In Boozo.ai:</b><br>
+        <code>POST /chat</code> → send your message + history + image to the agent<br><br>
+        Data goes in the <b>request body</b> as JSON. Hidden from URL bar.
+      </div>
+    </div>
+  </div>
+
+  <div class="code">
+<span class="cm">// What GET /health looks like over the network:</span>
+<span class="kw">GET</span> /health HTTP/1.1
+Host: localhost:<span class="nu">8000</span>
+
+<span class="cm">// Response:</span>
+HTTP/1.1 <span class="nu">200</span> OK
+{<span class="st">"status"</span>: <span class="st">"ok"</span>}
+
+<span class="cm">─────────────────────────────────────────</span>
+
+<span class="cm">// What POST /chat looks like over the network:</span>
+<span class="kw">POST</span> /chat HTTP/1.1
+Host: localhost:<span class="nu">8000</span>
+Content-Type: application/json
+
+{
+  <span class="st">"message"</span>: <span class="st">"what is Python?"</span>,
+  <span class="st">"history"</span>: [],
+  <span class="st">"selected_model"</span>: <span class="st">"groq:llama-3.3-70b-versatile"</span>
+}
+  </div>
+</div>
+<div class="div"><hr></div>
+
+
+<!-- ══ 3. THE 3 ROUTES ══ -->
+<div class="sec" id="routes">
+  <div class="sec-head">
+    <span class="num">03</span>
+    <div class="sec-icon ic-purple">🗺️</div>
+    <div><div class="sec-title t-purple">The 3 Routes in Boozo.ai</div><div class="sec-sub">Your entire backend in main.py — just 3 endpoints</div></div>
+  </div>
+
+  <div class="code">
+<span class="cm"># main.py — the entire FastAPI app</span>
+
+app = <span class="fn">FastAPI</span>(title=<span class="st">"Boozo.ai"</span>)
+app.<span class="fn">mount</span>(<span class="st">"/static"</span>, StaticFiles(directory=<span class="st">"static"</span>))
+
+<span class="cm">━━━ ROUTE 1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
+<span class="kw">@app.get</span>(<span class="st">"/"</span>)
+<span class="kw">def</span> <span class="fn">serve_frontend</span>():
+    <span class="kw">return</span> <span class="cl">FileResponse</span>(<span class="st">"static/index.html"</span>)
+
+<span class="cm">━━━ ROUTE 2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
+<span class="kw">@app.post</span>(<span class="st">"/chat"</span>)
+<span class="kw">def</span> <span class="fn">chat</span>(req: <span class="cl">ChatRequest</span>):
+    <span class="kw">def</span> <span class="fn">event_stream</span>():
+        <span class="kw">for</span> event <span class="kw">in</span> <span class="fn">run_agent</span>(req.message, req.history, ...):
+            <span class="kw">yield</span> <span class="st">f"data: {json.dumps(event)}\n\n"</span>
+    <span class="kw">return</span> <span class="cl">StreamingResponse</span>(event_stream(), media_type=<span class="st">"text/event-stream"</span>)
+
+<span class="cm">━━━ ROUTE 3 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
+<span class="kw">@app.get</span>(<span class="st">"/health"</span>)
+<span class="kw">def</span> <span class="fn">health</span>():
+    <span class="kw">return</span> {<span class="st">"status"</span>: <span class="st">"ok"</span>}
+  </div>
+
+  <div class="g2">
+    <div class="gc"><div class="gt"><span class="method get">GET</span><code>/</code></div><div class="gd">Returns <code>index.html</code>. This is what runs when you open <code>localhost:8000</code> in Chrome. Just serves the file.</div></div>
+    <div class="gc"><div class="gt"><span class="method post">POST</span><code>/chat</code></div><div class="gd">The main brain. Receives your message, starts the agent, streams events back. This is where all the AI magic happens.</div></div>
+    <div class="gc"><div class="gt"><span class="method get">GET</span><code>/health</code></div><div class="gd">Returns <code>{"status":"ok"}</code>. Used to check if the server is running. We use it after every restart with <code>curl /health</code>.</div></div>
+    <div class="gc"><div class="gt"><span class="method get">GET</span><code>/static/*</code></div><div class="gd">Serves any file in the static/ folder. This is how <code>shiro.jpg</code>, <code>flowchart.html</code>, and <code>concepts.html</code> are delivered.</div></div>
+  </div>
+</div>
+<div class="div"><hr></div>
+
+
+<!-- ══ 4. PYDANTIC ══ -->
+<div class="sec" id="pydantic">
+  <div class="sec-head">
+    <span class="num">04</span>
+    <div class="sec-icon ic-amber">🛡️</div>
+    <div><div class="sec-title t-amber">Pydantic — Data Bodyguard</div><div class="sec-sub">Validates every incoming request automatically</div></div>
+  </div>
+
+  <div class="hbox bg-amber">
+    <b>What it does:</b> When a POST request arrives at <code>/chat</code>, the raw JSON body gets handed to Pydantic's <b>ChatRequest</b> model. Pydantic checks every field, converts types, fills defaults — then gives your code a clean Python object. If anything is wrong, it auto-rejects with a clear error.
+  </div>
+
+  <div class="code">
+<span class="kw">class</span> <span class="cl">ChatRequest</span>(<span class="cl">BaseModel</span>):
+    message:        <span class="cl">str</span>           <span class="cm"># REQUIRED — must be text</span>
+    history:        list[dict] = []  <span class="cm"># optional — list of past turns</span>
+    image:          <span class="cl">str</span> | <span class="kw">None</span> = <span class="kw">None</span>  <span class="cm"># optional — base64 image</span>
+    image_mime:     <span class="cl">str</span> | <span class="kw">None</span> = <span class="kw">None</span>  <span class="cm"># optional — "image/png" etc</span>
+    selected_model: <span class="cl">str</span> | <span class="kw">None</span> = <span class="kw">None</span>  <span class="cm"># optional — which LLM to use</span>
+  </div>
+
+  <div class="g2">
+    <div class="gc" style="border-color:rgba(16,185,129,0.3)">
+      <div class="gt t-green">Valid request</div>
+      <div class="gd" style="font-family:monospace;font-size:.8rem">
+        {<br>
+        &nbsp;&nbsp;"message": "hello",<br>
+        &nbsp;&nbsp;"history": [],<br>
+        &nbsp;&nbsp;"selected_model": "groq:llama-3.3-70b"<br>
+        }<br><br>
+        <span style="color:var(--green)">→ ChatRequest object created</span><br>
+        <span style="color:var(--green)">→ chat() function called</span>
+      </div>
+    </div>
+    <div class="gc" style="border-color:rgba(239,68,68,0.3)">
+      <div class="gt t-red" style="color:#f87171">Invalid request</div>
+      <div class="gd" style="font-family:monospace;font-size:.8rem">
+        {<br>
+        &nbsp;&nbsp;"history": "not a list"<br>
+        }<br>
+        (message missing!)<br><br>
+        <span style="color:#f87171">→ 422 Validation Error</span><br>
+        <span style="color:#f87171">→ chat() never called</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    After Pydantic, your code accesses the data cleanly:<br><br>
+    <code>req.message</code> → <code>"what is Python?"</code><br>
+    <code>req.history</code> → <code>[]</code><br>
+    <code>req.selected_model</code> → <code>"groq:llama-3.3-70b-versatile"</code><br>
+    <code>req.image</code> → <code>None</code> (no image sent)
+  </div>
+</div>
+<div class="div"><hr></div>
+
+
+<!-- ══ 5. CHAT FLOW ══ -->
+<div class="sec" id="chat-flow">
+  <div class="sec-head">
+    <span class="num">05</span>
+    <div class="sec-icon ic-pink">🔀</div>
+    <div><div class="sec-title t-pink">Full /chat Request Flow</div><div class="sec-sub">From "Enter" key to answer on screen — every step</div></div>
+  </div>
+
+  <div class="flow">
+    <div class="fnode" style="border-color:rgba(0,229,255,0.35)">
+      <span class="fi">⌨️</span>
+      <div><div class="fl t-cyan">You press Enter in the browser</div><div class="fd">JavaScript collects message, history, image, selected_model</div></div>
+    </div>
+    <div class="farr"><div class="fline"></div><div class="flabel">fetch() POST</div><div class="fhead"></div></div>
+
+    <div class="fnode" style="border-color:rgba(59,130,246,0.35)">
+      <span class="fi">📡</span>
+      <div><div class="fl t-blue">HTTP POST /chat arrives at FastAPI</div><div class="fd">Body: JSON with message + history + selected_model</div></div>
+    </div>
+    <div class="farr"><div class="fline"></div><div class="flabel">Pydantic validates</div><div class="fhead"></div></div>
+
+    <div class="fnode" style="border-color:rgba(245,158,11,0.35)">
+      <span class="fi">🛡️</span>
+      <div><div class="fl t-amber">Pydantic builds ChatRequest object</div><div class="fd">Checks types, fills defaults, rejects bad input</div></div>
+    </div>
+    <div class="farr"><div class="fline"></div><div class="flabel">calls in thread</div><div class="fhead"></div></div>
+
+    <div class="fnode" style="border-color:rgba(124,58,237,0.35)">
+      <span class="fi">🔄</span>
+      <div><div class="fl t-purple">run_agent() starts — ReAct loop begins</div><div class="fd">Builds prompt from system + history + message + scratchpad</div></div>
+    </div>
+    <div class="farr"><div class="fline"></div><div class="flabel">HTTP to LLM API</div><div class="fhead"></div></div>
+
+    <div class="fnode" style="border-color:rgba(0,229,255,0.35)">
+      <span class="fi">⚡</span>
+      <div><div class="fl t-cyan">Groq / Cerebras / Gemini / Ollama called</div><div class="fd">Full prompt sent. LLM predicts tokens. Returns Thought + Action OR Final Answer</div></div>
+    </div>
+    <div class="farr"><div class="fline"></div><div class="flabel">parse output</div><div class="fhead"></div></div>
+
+    <div class="fnode" style="border-color:rgba(245,158,11,0.35)">
+      <span class="fi">🔍</span>
+      <div><div class="fl t-amber">Agent parses LLM output with regex</div><div class="fd">Extracts: Thought / Action / Final Answer sections</div></div>
+    </div>
+    <div class="farr"><div class="fline"></div><div class="flabel">if Action → run tool</div><div class="fhead"></div></div>
+
+    <div class="fnode" style="border-color:rgba(16,185,129,0.35)">
+      <span class="fi">🛠️</span>
+      <div><div class="fl t-green">Tool runs (web_search / code_exec / plot etc.)</div><div class="fd">Result added to scratchpad as Observation → loop back to LLM</div></div>
+    </div>
+    <div class="farr"><div class="fline"></div><div class="flabel">if Final Answer → stream</div><div class="fhead"></div></div>
+
+    <div class="fnode" style="border-color:rgba(224,64,251,0.35)">
+      <span class="fi">📤</span>
+      <div><div class="fl t-pink">Each event yielded as SSE data</div><div class="fd">data: {"type":"thought","content":"..."}\n\n sent immediately</div></div>
+    </div>
+    <div class="farr"><div class="fline"></div><div class="flabel">EventSource reads</div><div class="fhead"></div></div>
+
+    <div class="fnode" style="border-color:rgba(16,185,129,0.35)">
+      <span class="fi">✅</span>
+      <div><div class="fl t-green">Browser renders answer letter by letter</div><div class="fd">Right panel updates with thoughts, tools, timing, scratchpad</div></div>
+    </div>
+  </div>
+</div>
+<div class="div"><hr></div>
+
+
+<!-- ══ 6. TOKEN GENERATION ══ -->
+<div class="sec" id="token-gen">
+  <div class="sec-head">
+    <span class="num">06</span>
+    <div class="sec-icon ic-purple">⚙️</div>
+    <div><div class="sec-title t-purple">How Tokens Are Generated</div><div class="sec-sub">The core mechanic of how every LLM produces text</div></div>
+  </div>
+
+  <div class="hbox bg-purple">
+    <b>The single most important idea in all of AI:</b><br><br>
+    An LLM does ONE thing — it looks at all the text so far and <b>predicts the next token</b>. Then it adds that token and predicts the next one. And again. And again. That's how "Hello, how are you?" is generated — one word-chunk at a time.
+  </div>
+
+  <div class="card">
+    <b>Step by step — generating "Python is great":</b>
+  </div>
+
+  <div class="flow">
+    <div class="fnode" style="border-color:rgba(0,229,255,0.3)">
+      <span class="fi">📥</span>
+      <div><div class="fl">Input prompt sent to LLM</div><div class="fd">"You are Boozo.ai... User: tell me about Python"</div></div>
+    </div>
+    <div class="farr"><div class="fline"></div><div class="flabel">probability over vocab</div><div class="fhead"></div></div>
+    <div class="fnode" style="border-color:rgba(124,58,237,0.3)">
+      <span class="fi">🎲</span>
+      <div><div class="fl t-purple">LLM assigns probability to every possible next token</div><div class="fd">"Python" = 42% &nbsp; "Programming" = 18% &nbsp; "The" = 9% &nbsp; "I" = 7% ...</div></div>
+    </div>
+    <div class="farr"><div class="fline"></div><div class="flabel">temperature 0.3 applied</div><div class="fhead"></div></div>
+    <div class="fnode" style="border-color:rgba(245,158,11,0.3)">
+      <span class="fi">🌡️</span>
+      <div><div class="fl t-amber">Temperature sharpens the probabilities</div><div class="fd">At 0.3: most likely token wins almost always → "Python" selected</div></div>
+    </div>
+    <div class="farr"><div class="fline"></div><div class="flabel">append + repeat</div><div class="fhead"></div></div>
+    <div class="fnode" style="border-color:rgba(16,185,129,0.3)">
+      <span class="fi">➕</span>
+      <div><div class="fl t-green">"Python" added. Now predict next token...</div><div class="fd">New input: "...User: tell me about Python\nAssistant: Python"</div></div>
+    </div>
+    <div class="farr"><div class="fline"></div><div class="flabel">repeat until done token</div><div class="fhead"></div></div>
+    <div class="fnode" style="border-color:rgba(0,229,255,0.3)">
+      <span class="fi">🏁</span>
+      <div><div class="fl t-cyan">Stops at special [END] token or max_tokens limit</div><div class="fd">max_tokens = 1024 in Boozo.ai — prevents infinite generation</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <b>Watch it happen — live token build:</b>
+  </div>
+
+  <div class="token-stream" id="tok-demo">
+    <span class="tok-cursor" id="tok-cur"></span>
+  </div>
+
+  <div class="card">
+    <b>Why this matters for Boozo.ai:</b> The LLM doesn't "think" and then "write". It generates one token, adds it, generates another. This is why <b>temperature matters</b> — it controls how "adventurous" each token pick is. At 0.3, picks are focused and accurate. At 1.0, picks are random and creative.
+  </div>
+
+  <div class="hbox bg-cyan">
+    <b>Token count in Boozo.ai:</b> Each iteration, agent.py estimates token usage with <code>len(prompt) // 4</code> (roughly 4 characters per token). This is shown in the context window bar. The LLM can process max <code>NUM_CTX = 8192</code> tokens at once. If exceeded, the model starts forgetting earlier parts of the conversation.
+  </div>
+</div>
+<div class="div"><hr></div>
+
+
+<!-- ══ 7. SSE STREAM ══ -->
+<div class="sec" id="sse">
+  <div class="sec-head">
+    <span class="num">07</span>
+    <div class="sec-icon ic-blue">📡</div>
+    <div><div class="sec-title t-blue">SSE — Server-Sent Events</div><div class="sec-sub">How events flow from server to browser in real time</div></div>
+  </div>
+
+  <div class="hbox bg-blue">
+    <b>Normal HTTP:</b> browser asks → waits → gets full response at once.<br>
+    <b>SSE:</b> browser asks → connection stays open → server sends pieces one by one → browser updates live.<br><br>
+    This is why you see Thought, Action, Observation appear one by one instead of all at the end.
+  </div>
+
+  <div class="card"><b>Exact SSE format — what travels over the wire:</b></div>
+
+  <div class="sse-box" id="sse-demo">
+  </div>
+
+  <div class="code">
+<span class="cm"># server side (agent.py) — yielding events</span>
+<span class="kw">yield</span> {<span class="st">"type"</span>: <span class="st">"iteration"</span>, <span class="st">"n"</span>: <span class="nu">1</span>, <span class="st">"max"</span>: <span class="nu">5</span>}
+<span class="kw">yield</span> {<span class="st">"type"</span>: <span class="st">"tokens"</span>, <span class="st">"used"</span>: <span class="nu">312</span>, <span class="st">"limit"</span>: <span class="nu">8192</span>}
+<span class="kw">yield</span> {<span class="st">"type"</span>: <span class="st">"thought"</span>, <span class="st">"content"</span>: <span class="st">"I need to search..."</span>}
+<span class="kw">yield</span> {<span class="st">"type"</span>: <span class="st">"action"</span>, <span class="st">"content"</span>: <span class="st">"web_search(Python version)"</span>}
+<span class="kw">yield</span> {<span class="st">"type"</span>: <span class="st">"observation"</span>, <span class="st">"content"</span>: <span class="st">"Python 3.13..."</span>}
+<span class="kw">yield</span> {<span class="st">"type"</span>: <span class="st">"answer_token"</span>, <span class="st">"content"</span>: <span class="st">"P"</span>}
+<span class="kw">yield</span> {<span class="st">"type"</span>: <span class="st">"answer_token"</span>, <span class="st">"content"</span>: <span class="st">"y"</span>}
+<span class="kw">yield</span> {<span class="st">"type"</span>: <span class="st">"done"</span>, <span class="st">"content"</span>: <span class="st">"Python 3.13 is the latest..."</span>}
+
+<span class="cm"># main.py — wraps each event in SSE format</span>
+<span class="kw">yield</span> <span class="st">f"data: {json.dumps(event)}\n\n"</span>
+  </div>
+
+  <div class="code">
+<span class="cm">// browser side (index.html) — reading SSE</span>
+<span class="kw">const</span> resp = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="st">'/chat'</span>, { method: <span class="st">'POST'</span>, body: ... });
+<span class="kw">const</span> reader = resp.body.<span class="fn">getReader</span>();
+
+<span class="kw">while</span>(<span class="kw">true</span>) {
+  <span class="kw">const</span> {value, done} = <span class="kw">await</span> reader.<span class="fn">read</span>();
+  <span class="cm">// parse "data: {...}\n\n"</span>
+  <span class="kw">const</span> ev = <span class="cl">JSON</span>.<span class="fn">parse</span>(line.<span class="fn">slice</span>(<span class="nu">6</span>));
+
+  <span class="kw">if</span> (ev.type === <span class="st">'thought'</span>)       <span class="fn">addBrainStep</span>(<span class="st">'thought'</span>, ev.content);
+  <span class="kw">if</span> (ev.type === <span class="st">'action'</span>)        <span class="fn">addBrainStep</span>(<span class="st">'action'</span>, ev.content);
+  <span class="kw">if</span> (ev.type === <span class="st">'answer_token'</span>)  aMsg.textContent += ev.content;
+  <span class="kw">if</span> (ev.type === <span class="st">'chart'</span>)         <span class="fn">renderChart</span>(ev.content);
+  <span class="kw">if</span> (ev.type === <span class="st">'done'</span>)          <span class="fn">finalise</span>(ev.content);
+}
+  </div>
+
+  <div class="g2">
+    <div class="gc"><div class="gt t-blue">All SSE event types</div><div class="gd">
+      <code>iteration</code> — loop number<br>
+      <code>tokens</code> — context usage<br>
+      <code>timing</code> — ms per step<br>
+      <code>model_used</code> — which LLM<br>
+      <code>thought</code> — agent thinking<br>
+      <code>action</code> — tool being called<br>
+      <code>observation</code> — tool result<br>
+      <code>scratchpad</code> — full rough work<br>
+      <code>answer_token</code> — one character<br>
+      <code>chart</code> — Chart.js spec<br>
+      <code>done</code> — final answer<br>
+      <code>error</code> — something failed
+    </div></div>
+    <div class="gc"><div class="gt t-blue">Why not WebSockets?</div><div class="gd">WebSockets are two-way (browser AND server can send). SSE is one-way (server → browser only). For a chat app where the browser just sends one POST and then listens, SSE is simpler and perfect. WebSockets would be overkill.</div></div>
+  </div>
+</div>
+<div class="div"><hr></div>
+
+
+<!-- ══ 8. FULL LIFECYCLE ══ -->
+<div class="sec" id="full-life">
+  <div class="sec-head">
+    <span class="num">08</span>
+    <div class="sec-icon ic-orange">🌐</div>
+    <div><div class="sec-title t-orange">Complete Lifecycle — Everything Together</div><div class="sec-sub">From your keystroke to the answer — every millisecond explained</div></div>
+  </div>
+
+  <div class="card"><b>You ask: "What is the latest Python version?"</b></div>
+
+  <div class="code">
+<span class="cm">T=0ms    You press Enter</span>
+         JS calls fetch(<span class="st">'/chat'</span>, { method:<span class="st">'POST'</span>, body: JSON })
+
+<span class="cm">T=1ms    HTTP packet leaves your browser</span>
+         POST /chat HTTP/<span class="nu">1.1</span>
+         { <span class="st">"message"</span>: <span class="st">"What is the latest Python version?"</span>, <span class="st">"history"</span>: [] }
+
+<span class="cm">T=2ms    FastAPI receives it</span>
+         Pydantic validates → ChatRequest object created
+         FastAPI runs chat() in a thread pool
+
+<span class="cm">T=3ms    agent.py starts</span>
+         SSE event → { type: <span class="st">"iteration"</span>, n: <span class="nu">1</span>, max: <span class="nu">5</span> }
+         SSE event → { type: <span class="st">"tokens"</span>, used: <span class="nu">280</span>, limit: <span class="nu">8192</span> }
+
+<span class="cm">T=4ms    Prompt built + sent to Groq API</span>
+         [System prompt + history + question + empty scratchpad]
+         httpx.post(<span class="st">"https://api.groq.com/..."</span>)
+
+<span class="cm">T=900ms  Groq returns LLM response</span>
+         <span class="st">"Thought: I should search for current Python version.
+          Action: web_search(latest Python version 2024)"</span>
+
+         SSE event → { type: <span class="st">"timing"</span>, who: <span class="st">"llm"</span>, ms: <span class="nu">897</span> }
+         SSE event → { type: <span class="st">"model_used"</span>, content: <span class="st">"groq:llama-3.3-70b"</span> }
+         SSE event → { type: <span class="st">"thought"</span>, content: <span class="st">"I should search..."</span> }
+         SSE event → { type: <span class="st">"action"</span>, content: <span class="st">"web_search(latest Python...)"</span> }
+
+<span class="cm">T=901ms  tool runs — web_search()</span>
+         DuckDuckGo HTML scraped → top results extracted
+         SSE event → { type: <span class="st">"observation"</span>, content: <span class="st">"Python 3.13..."</span> }
+         SSE event → { type: <span class="st">"scratchpad"</span>, content: <span class="st">"Thought:...\nAction:...\nObservation:..."</span> }
+
+<span class="cm">T=902ms  Loop iteration 2 — prompt rebuilt with scratchpad</span>
+         New prompt = old prompt + Thought + Action + Observation
+         Sent to Groq again
+
+<span class="cm">T=1700ms Groq returns</span>
+         <span class="st">"Thought: I now have the answer.
+          Final Answer: Python 3.13 was released in October 2024..."</span>
+
+         SSE event → { type: <span class="st">"thought"</span>, content: <span class="st">"I now have the answer"</span> }
+
+<span class="cm">T=1701ms Streaming begins — character by character</span>
+         SSE event → { type: <span class="st">"answer_token"</span>, content: <span class="st">"P"</span> }
+         SSE event → { type: <span class="st">"answer_token"</span>, content: <span class="st">"y"</span> }
+         SSE event → { type: <span class="st">"answer_token"</span>, content: <span class="st">"t"</span> }
+         ... (hundreds of character events)
+
+<span class="cm">T=1750ms Done</span>
+         SSE event → { type: <span class="st">"done"</span>, content: <span class="st">"Python 3.13 was released..."</span> }
+         SSE connection closed
+         Browser displays final formatted answer
+  </div>
+
+  <div class="hbox bg-orange">
+    <b>Summary of all the tech working together:</b><br><br>
+    <b>FastAPI</b> — receives the request, validates it, starts the agent in a thread<br>
+    <b>Pydantic</b> — cleans and validates the incoming JSON<br>
+    <b>agent.py</b> — runs the ReAct loop, calls LLMs, dispatches tools<br>
+    <b>Groq API</b> — generates tokens one by one using the LLM (temperature 0.3)<br>
+    <b>tools.py</b> — runs web_search / code_exec / plot etc. when needed<br>
+    <b>SSE</b> — streams every event back to the browser instantly<br>
+    <b>JavaScript</b> — reads the stream, updates right panel + chat bubble live
+  </div>
+</div>
+
+
+<!-- Back links -->
+<div style="text-align:center;padding:0 20px;margin-top:10px">
+  <a href="ai-concepts.html" style="color:var(--cyan);font-size:.88rem;text-decoration:none;border:1px solid var(--border);padding:10px 22px;border-radius:999px;margin:5px;display:inline-block" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)'">AI Concepts</a>
+  <a href="flowchart.html"   style="color:var(--purple);font-size:.88rem;text-decoration:none;border:1px solid var(--border);padding:10px 22px;border-radius:999px;margin:5px;display:inline-block" onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor='var(--border)'">Step-by-Step Flow</a>
+  <a href="/"                style="color:var(--green);font-size:.88rem;text-decoration:none;border:1px solid var(--border);padding:10px 22px;border-radius:999px;margin:5px;display:inline-block" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'">Back to Boozo.ai</a>
+</div>
+
+<script>
+  // Scroll animation
+  const obs = new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('on');});},{threshold:.07});
+  document.querySelectorAll('.sec').forEach(el=>obs.observe(el));
+
+  // Token generation animation
+  const tokens = [
+    {t:'Thought',c:'rgba(0,229,255,0.15)',tc:'#00e5ff'},
+    {t:':',c:'rgba(100,116,139,0.12)',tc:'#64748b'},
+    {t:' Python',c:'rgba(124,58,237,0.15)',tc:'#a78bfa'},
+    {t:' 3.13',c:'rgba(245,158,11,0.15)',tc:'#f59e0b'},
+    {t:' is',c:'rgba(16,185,129,0.15)',tc:'#10b981'},
+    {t:' the',c:'rgba(0,229,255,0.12)',tc:'#00e5ff'},
+    {t:' latest',c:'rgba(224,64,251,0.15)',tc:'#e040fb'},
+    {t:' stable',c:'rgba(59,130,246,0.15)',tc:'#3b82f6'},
+    {t:' release',c:'rgba(249,115,22,0.15)',tc:'#f97316'},
+    {t:'.',c:'rgba(100,116,139,0.12)',tc:'#64748b'},
+  ];
+  const tokDemo=document.getElementById('tok-demo');
+  const tokCur=document.getElementById('tok-cur');
+  let ti=0,tokStarted=false;
+  function addTok(){
+    if(ti>=tokens.length){tokCur.style.display='none';return;}
+    const s=document.createElement('span');
+    s.className='tok';
+    s.textContent=tokens[ti].t;
+    s.style.background=tokens[ti].c;
+    s.style.color=tokens[ti].tc;
+    s.style.opacity='0';
+    tokDemo.insertBefore(s,tokCur);
+    setTimeout(()=>s.style.opacity='1',50);
+    ti++;
+    setTimeout(addTok,380);
+  }
+  const tokObs=new IntersectionObserver(e=>{
+    if(e[0].isIntersecting&&!tokStarted){tokStarted=true;setTimeout(addTok,600);tokObs.disconnect();}
+  },{threshold:.5});
+  tokObs.observe(tokDemo);
+
+  // SSE demo animation
+  const sseLines=[
+    '<span class="sse-key">data:</span> {<span class="sse-key">"type"</span>:<span class="sse-str">"iteration"</span>, <span class="sse-key">"n"</span>:<span class="sse-val">1</span>, <span class="sse-key">"max"</span>:<span class="sse-val">5</span>}',
+    '<span class="sse-key">data:</span> {<span class="sse-key">"type"</span>:<span class="sse-str">"tokens"</span>, <span class="sse-key">"used"</span>:<span class="sse-val">312</span>, <span class="sse-key">"limit"</span>:<span class="sse-val">8192</span>}',
+    '<span class="sse-key">data:</span> {<span class="sse-key">"type"</span>:<span class="sse-str">"thought"</span>, <span class="sse-key">"content"</span>:<span class="sse-str">"I should search the web..."</span>}',
+    '<span class="sse-key">data:</span> {<span class="sse-key">"type"</span>:<span class="sse-str">"action"</span>, <span class="sse-key">"content"</span>:<span class="sse-str">"web_search(Python version)"</span>}',
+    '<span class="sse-key">data:</span> {<span class="sse-key">"type"</span>:<span class="sse-str">"timing"</span>, <span class="sse-key">"who"</span>:<span class="sse-str">"web_search"</span>, <span class="sse-key">"ms"</span>:<span class="sse-val">342</span>}',
+    '<span class="sse-key">data:</span> {<span class="sse-key">"type"</span>:<span class="sse-str">"observation"</span>, <span class="sse-key">"content"</span>:<span class="sse-str">"Python 3.13 released Oct 2024"</span>}',
+    '<span class="sse-key">data:</span> {<span class="sse-key">"type"</span>:<span class="sse-str">"answer_token"</span>, <span class="sse-key">"content"</span>:<span class="sse-str">"P"</span>}',
+    '<span class="sse-key">data:</span> {<span class="sse-key">"type"</span>:<span class="sse-str">"answer_token"</span>, <span class="sse-key">"content"</span>:<span class="sse-str">"y"</span>}',
+    '<span class="sse-key">data:</span> {<span class="sse-key">"type"</span>:<span class="sse-str">"done"</span>, <span class="sse-key">"content"</span>:<span class="sse-str">"Python 3.13 is the latest..."</span>}',
+  ];
+  const sseDemo=document.getElementById('sse-demo');
+  let si=0,sseStarted=false;
+  function addSSE(){
+    if(si>=sseLines.length)return;
+    const d=document.createElement('div');
+    d.className='sse-line';
+    d.innerHTML=sseLines[si];
+    sseDemo.appendChild(d);
+    setTimeout(()=>d.classList.add('in'),30);
+    si++;
+    setTimeout(addSSE,si<=2?350:si<=6?500:250);
+  }
+  const sseObs=new IntersectionObserver(e=>{
+    if(e[0].isIntersecting&&!sseStarted){sseStarted=true;setTimeout(addSSE,500);sseObs.disconnect();}
+  },{threshold:.4});
+  sseObs.observe(sseDemo);
+</script>
+</body>
+</html>

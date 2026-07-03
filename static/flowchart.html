@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How Boozo.ai Works — Simple Guide</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #050816;
+      --surface: #0d1224;
+      --border:  #1e2a4a;
+      --cyan:    #00e5ff;
+      --purple:  #7c3aed;
+      --pink:    #e040fb;
+      --green:   #10b981;
+      --amber:   #f59e0b;
+      --red:     #ef4444;
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 40px 20px 80px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 48px;
+    }
+
+    /* ── Flow container ─────────────────────────────── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* ── Each step card ─────────────────────────────── */
+    .step {
+      width: 100%;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.3s;
+      cursor: default;
+    }
+    .step:hover { border-color: var(--cyan); }
+    .step.visible { opacity: 1; transform: translateY(0); }
+
+    .step-icon {
+      font-size: 2rem;
+      flex-shrink: 0;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-body { flex: 1; }
+    .step-num {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .step-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .step-desc {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      line-height: 1.55;
+    }
+    .step-desc b { color: var(--text); }
+
+    /* Colour themes per step */
+    .s1 .step-icon { background: rgba(0,229,255,0.12); }
+    .s1 .step-title { color: var(--cyan); }
+    .s2 .step-icon { background: rgba(124,58,237,0.15); }
+    .s2 .step-title { color: #a78bfa; }
+    .s3 .step-icon { background: rgba(224,64,251,0.12); }
+    .s3 .step-title { color: var(--pink); }
+    .s4 .step-icon { background: rgba(245,158,11,0.12); }
+    .s4 .step-title { color: var(--amber); }
+    .s5 .step-icon { background: rgba(16,185,129,0.12); }
+    .s5 .step-title { color: var(--green); }
+    .s6 .step-icon { background: rgba(239,68,68,0.12); }
+    .s6 .step-title { color: #f87171; }
+    .s7 .step-icon { background: rgba(0,229,255,0.12); }
+    .s7 .step-title { color: var(--cyan); }
+    .s8 .step-icon { background: rgba(16,185,129,0.12); }
+    .s8 .step-title { color: var(--green); }
+
+    /* ── Arrow between steps ────────────────────────── */
+    .arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      padding: 4px 0;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .arrow.visible { opacity: 1; }
+    .arrow-line {
+      width: 2px;
+      height: 28px;
+      background: linear-gradient(to bottom, var(--border), var(--cyan));
+    }
+    .arrow-head {
+      width: 0; height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 10px solid var(--cyan);
+    }
+
+    /* ── Decision diamond ───────────────────────────── */
+    .diamond-wrapper {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .diamond-wrapper.visible { opacity: 1; transform: translateY(0); }
+
+    .diamond {
+      background: rgba(245,158,11,0.1);
+      border: 2px solid var(--amber);
+      border-radius: 8px;
+      transform: rotate(45deg);
+      width: 120px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .diamond-inner {
+      transform: rotate(-45deg);
+      text-align: center;
+      padding: 8px;
+    }
+    .diamond-inner .emoji { font-size: 1.6rem; display: block; }
+    .diamond-inner span { font-size: 0.7rem; font-weight: 700; color: var(--amber); letter-spacing: 0.05em; }
+
+    .branch-row {
+      display: flex;
+      width: 100%;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 16px;
+      opacity: 0;
+      transition: opacity 0.5s ease 0.2s;
+    }
+    .branch-row.visible { opacity: 1; }
+
+    .branch {
+      flex: 1;
+      max-width: 300px;
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .branch.yes { border: 2px solid rgba(16,185,129,0.5); }
+    .branch.no  { border: 2px solid rgba(239,68,68,0.5); }
+    .branch-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .branch.yes .branch-label { color: var(--green); }
+    .branch.no  .branch-label { color: #f87171; }
+    .branch-title { font-size: 0.92rem; font-weight: 700; color: var(--text); }
+    .branch-desc  { font-size: 0.82rem; color: #94a3b8; line-height: 1.5; }
+
+    /* ── Provider fallback boxes ─────────────────────── */
+    .providers {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .providers.visible { opacity: 1; transform: translateY(0); }
+    .provider {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 16px;
+      text-align: center;
+      font-size: 0.82rem;
+    }
+    .provider .p-emoji { font-size: 1.2rem; display: block; margin-bottom: 3px; }
+    .provider .p-name  { font-weight: 700; color: var(--cyan); }
+    .provider .p-sub   { color: var(--muted); font-size: 0.73rem; }
+    .provider-arrow {
+      font-size: 1.1rem;
+      color: var(--muted);
+      align-self: center;
+    }
+
+    /* ── Legend ─────────────────────────────────────── */
+    .legend {
+      max-width: 680px;
+      margin: 48px auto 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .legend.visible { opacity: 1; transform: translateY(0); }
+    .legend h2 { font-size: 1rem; color: var(--cyan); margin-bottom: 14px; }
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.83rem;
+    }
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🤖 How Boozo.ai Works</h1>
+  <p class="subtitle">A simple step-by-step guide — explained like you're in class 7!</p>
+
+  <div class="flow" id="flow">
+
+    <!-- Step 1 -->
+    <div class="step s1">
+      <div class="step-icon">💬</div>
+      <div class="step-body">
+        <div class="step-num">Step 1</div>
+        <div class="step-title">You Type a Question</div>
+        <div class="step-desc">You open the chat and type something like <b>"What is Python?"</b> or <b>"Show me a chart of top languages"</b>. You press Enter. That's where the magic starts!</div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- Step 2 -->
+    <div class="step s2">
+      <div class="step-icon">📦</div>
+      <div class="step-body">
+        <div class="step-num">Step 2</div>
+        <div class="step-title">Browser Sends Your Message to the Server</div>
+        <div class="step-desc">Your browser (Chrome, Edge etc.) packages your message and sends it over the internet to our <b>FastAPI server</b> running on your computer at <b>localhost:8000</b>. Think of it like sending a letter to a post office.</div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- Step 3 -->
+    <div class="step s3">
+      <div class="step-icon">🧠</div>
+      <div class="step-body">
+        <div class="step-num">Step 3</div>
+        <div class="step-title">The Agent Starts Thinking (ReAct Loop)</div>
+        <div class="step-desc">The server hands your question to <b>Boozo.ai's brain</b> — the ReAct agent. <b>ReAct</b> stands for <b>Reason + Act</b>. It means: first <b>think</b>, then <b>do something</b>, then <b>think again</b>. Like how you solve a maths problem step by step.</div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- Step 4 — LLM providers -->
+    <div class="step s4">
+      <div class="step-icon">⚡</div>
+      <div class="step-body">
+        <div class="step-num">Step 4</div>
+        <div class="step-title">It Asks a Giant AI Brain (LLM)</div>
+        <div class="step-desc">The agent sends your question to a <b>Large Language Model (LLM)</b> — a super-smart AI trained on millions of books and websites. We try them in order until one works:</div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <div class="providers">
+      <div class="provider">
+        <span class="p-emoji">⚡</span>
+        <div class="p-name">Groq</div>
+        <div class="p-sub">Try first — fastest</div>
+      </div>
+      <div class="provider-arrow">→</div>
+      <div class="provider">
+        <span class="p-emoji">🔥</span>
+        <div class="p-name">Cerebras</div>
+        <div class="p-sub">If Groq fails</div>
+      </div>
+      <div class="provider-arrow">→</div>
+      <div class="provider">
+        <span class="p-emoji">✨</span>
+        <div class="p-name">Gemini</div>
+        <div class="p-sub">If Cerebras fails</div>
+      </div>
+      <div class="provider-arrow">→</div>
+      <div class="provider">
+        <span class="p-emoji">🖥</span>
+        <div class="p-name">Ollama</div>
+        <div class="p-sub">Last resort (local)</div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- Step 5 — Decision -->
+    <div class="step s5">
+      <div class="step-icon">📋</div>
+      <div class="step-body">
+        <div class="step-num">Step 5</div>
+        <div class="step-title">The LLM Reads and Plans</div>
+        <div class="step-desc">The LLM reads your question plus a <b>special instruction</b> that says: "Think step by step. If you need more info, use a tool. Otherwise, give the final answer." It writes back a <b>Thought</b> (what it plans to do).</div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- Decision diamond -->
+    <div class="diamond-wrapper">
+      <div>
+        <div style="text-align:center; font-size:0.8rem; color:var(--amber); font-weight:700; margin-bottom:8px;">DECISION</div>
+        <div class="diamond">
+          <div class="diamond-inner">
+            <span class="emoji">🤔</span>
+            <span>Does it need<br>a TOOL?</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- Branch YES / NO -->
+    <div class="branch-row">
+      <div class="branch yes">
+        <div class="branch-label">✅ YES — Use a Tool</div>
+        <div class="branch-title">Runs a Tool</div>
+        <div class="branch-desc">
+          The agent picks one of its tools:<br><br>
+          🔍 <b>web_search</b> — searches DuckDuckGo<br>
+          💻 <b>code_exec</b> — runs Python code<br>
+          🧮 <b>calculator</b> — does maths<br>
+          📥 <b>rag_ingest</b> — stores a document<br>
+          🔎 <b>rag_search</b> — finds stored info<br>
+          📊 <b>plot</b> — draws a chart<br><br>
+          The tool runs and sends back an <b>Observation</b> (the result). Then the loop goes back to Step 3 and thinks again!
+        </div>
+      </div>
+      <div class="branch no">
+        <div class="branch-label">🏁 NO — Ready to Answer</div>
+        <div class="branch-title">Writes Final Answer</div>
+        <div class="branch-desc">
+          The agent has enough info to answer you directly. It writes <b>"Final Answer: …"</b> and stops the loop.<br><br>
+          The answer is streamed back to your screen <b>one letter at a time</b> — that's why it appears like it's typing!
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- Step 6 -->
+    <div class="step s6">
+      <div class="step-icon">📡</div>
+      <div class="step-body">
+        <div class="step-num">Step 6</div>
+        <div class="step-title">Answer Streams Back to Your Screen</div>
+        <div class="step-desc">The server sends the answer back using <b>SSE (Server-Sent Events)</b>. Think of it like a live TV broadcast — data flows continuously from the server to your browser. That's why you see the text appearing letter by letter instead of all at once.</div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- Step 7 -->
+    <div class="step s7">
+      <div class="step-icon">🖥️</div>
+      <div class="step-body">
+        <div class="step-num">Step 7</div>
+        <div class="step-title">Right Panel Updates Live</div>
+        <div class="step-desc">While you wait, the <b>right panel</b> shows you everything happening behind the scenes: the agent's <b>thoughts</b>, which <b>tools</b> it used, how long each step took (<b>latency</b>), and how much of the context window was used. It's like watching the agent's brain through a glass window!</div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- Step 8 -->
+    <div class="step s8">
+      <div class="step-icon">✅</div>
+      <div class="step-body">
+        <div class="step-num">Step 8</div>
+        <div class="step-title">Done! Answer Displayed</div>
+        <div class="step-desc">The final answer appears in the chat bubble. If the agent made a <b>chart</b>, it draws it right there in the chat. Your question + the agent's answer are saved in <b>history</b> so the agent remembers the conversation for next time.</div>
+      </div>
+    </div>
+
+  </div><!-- /flow -->
+
+  <!-- Legend -->
+  <div class="legend" id="legend">
+    <h2>📚 Key Words Explained Simply</h2>
+    <div class="legend-grid">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div><div><b>LLM</b> — A giant AI brain trained on the whole internet</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div><div><b>ReAct Loop</b> — Think → Act → Think again, repeat</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--pink)"></div><div><b>Tool</b> — A special action the agent can run (search, code, etc.)</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div><div><b>SSE</b> — Live data stream from server to browser</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div><div><b>FastAPI</b> — The post office that handles your messages</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f87171"></div><div><b>RAG</b> — Agent's notebook where it stores &amp; finds documents</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div><div><b>Scratchpad</b> — Agent's rough work (Thoughts + Observations)</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div><div><b>Fallback</b> — If Plan A fails, try Plan B automatically</div></div>
+    </div>
+  </div>
+
+  <script>
+    // Animate elements into view as they scroll into viewport
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.step, .arrow, .diamond-wrapper, .branch-row, .providers, .legend')
+      .forEach(el => observer.observe(el));
+  </script>
+
+</body>
+</html>

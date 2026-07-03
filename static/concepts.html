@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Concepts in Boozo.ai — MCP & More</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #050816;
+      --surface: #0d1224;
+      --s2:      #111827;
+      --border:  #1e2a4a;
+      --cyan:    #00e5ff;
+      --purple:  #7c3aed;
+      --pink:    #e040fb;
+      --green:   #10b981;
+      --amber:   #f59e0b;
+      --red:     #ef4444;
+      --blue:    #3b82f6;
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 40px 20px 80px;
+    }
+
+    /* ── Page header ─── */
+    .page-header { text-align: center; margin-bottom: 56px; }
+    .page-header h1 {
+      font-size: 2rem;
+      background: linear-gradient(135deg, var(--cyan), var(--purple), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .page-header p { color: var(--muted); font-size: 0.95rem; }
+
+    /* ── Nav pills ─── */
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 48px;
+    }
+    .nav a {
+      text-decoration: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .nav a:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    /* ── Section ─── */
+    .section {
+      max-width: 800px;
+      margin: 0 auto 64px;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .section.visible { opacity: 1; transform: translateY(0); }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .section-icon {
+      font-size: 1.8rem;
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .section-title { font-size: 1.3rem; font-weight: 700; }
+    .section-sub   { font-size: 0.83rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── Card ─── */
+    .card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 26px;
+      margin-bottom: 14px;
+    }
+    .card p  { font-size: 0.9rem; color: #94a3b8; line-height: 1.7; }
+    .card p b { color: var(--text); }
+
+    /* ── Pipe diagram ─── */
+    .pipe {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 14px 0;
+    }
+    .pipe-box {
+      background: var(--s2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .pipe-arrow { color: var(--muted); font-size: 1rem; }
+
+    /* ── Highlight box ─── */
+    .hbox {
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 0.88rem;
+      line-height: 1.65;
+      margin: 12px 0;
+    }
+    .hbox.cyan   { background: rgba(0,229,255,0.06);   border-left: 3px solid var(--cyan); }
+    .hbox.purple { background: rgba(124,58,237,0.08);  border-left: 3px solid var(--purple); }
+    .hbox.green  { background: rgba(16,185,129,0.07);  border-left: 3px solid var(--green); }
+    .hbox.amber  { background: rgba(245,158,11,0.07);  border-left: 3px solid var(--amber); }
+    .hbox.pink   { background: rgba(224,64,251,0.07);  border-left: 3px solid var(--pink); }
+    .hbox.blue   { background: rgba(59,130,246,0.07);  border-left: 3px solid var(--blue); }
+    .hbox b { color: var(--text); }
+
+    /* ── Two-col grid ─── */
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } }
+
+    .mini-card {
+      background: var(--s2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .mini-card .mc-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 6px; }
+    .mini-card .mc-desc  { font-size: 0.82rem; color: #94a3b8; line-height: 1.55; }
+
+    /* ── MCP flow ─── */
+    .mcp-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .mcp-node {
+      background: var(--s2);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 20px;
+      width: 100%;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .mcp-node .n-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .mcp-node .n-label { font-weight: 700; }
+    .mcp-node .n-desc  { color: var(--muted); font-size: 0.8rem; }
+    .mcp-connector {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2px 0;
+    }
+    .mcp-line  { width: 2px; height: 22px; background: linear-gradient(to bottom, var(--border), var(--cyan)); }
+    .mcp-arrow { width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:9px solid var(--cyan); }
+    .mcp-label { font-size: 0.72rem; color: var(--cyan); font-weight: 600; background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.2); border-radius: 999px; padding: 2px 10px; margin-bottom: 2px; }
+
+    /* ── Tool table ─── */
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th { text-align: left; padding: 10px 14px; color: var(--muted); font-weight: 600; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    td { padding: 11px 14px; border-bottom: 1px solid rgba(30,42,74,0.5); vertical-align: top; }
+    td:first-child { font-weight: 700; color: var(--cyan); white-space: nowrap; }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Divider ─── */
+    .divider { width: 100%; max-width: 800px; margin: 0 auto 48px; height: 1px; background: linear-gradient(to right, transparent, var(--border), transparent); }
+
+    /* ── Tag pills ─── */
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .tag { background: var(--s2); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; font-size: 0.78rem; color: var(--muted); }
+
+    /* ── RAG diagram ─── */
+    .rag-row { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; margin: 14px 0; }
+    .rag-box {
+      flex: 1; min-width: 120px;
+      background: var(--s2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      font-size: 0.82rem;
+    }
+    .rag-box .r-icon { font-size: 1.5rem; display: block; margin-bottom: 6px; }
+    .rag-box .r-name { font-weight: 700; color: var(--text); margin-bottom: 3px; }
+    .rag-box .r-desc { color: var(--muted); font-size: 0.76rem; }
+    .rag-arrow { align-self: center; font-size: 1.2rem; color: var(--muted); flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+  <div class="page-header">
+    <h1>🧩 Concepts Inside Boozo.ai</h1>
+    <p>Where MCP is used, how RAG works, what SSE is — all explained simply</p>
+  </div>
+
+  <nav class="nav">
+    <a href="#mcp">MCP</a>
+    <a href="#react">ReAct Loop</a>
+    <a href="#sse">SSE Streaming</a>
+    <a href="#rag">RAG</a>
+    <a href="#tools">Tools</a>
+    <a href="#llm">LLM Providers</a>
+    <a href="#embeddings">Embeddings</a>
+    <a href="#sandbox">Sandbox</a>
+    <a href="flowchart.html">← Back to Flow</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════ MCP -->
+  <div class="section" id="mcp">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(0,229,255,0.1)">🔌</div>
+      <div>
+        <div class="section-title" style="color:var(--cyan)">MCP — Model Context Protocol</div>
+        <div class="section-sub">The "plug socket" standard for connecting AI to tools</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p><b>What is MCP?</b> Imagine your AI assistant is like a smartphone. MCP is like the <b>USB-C port</b> — a standard connector that lets you plug in any accessory (charger, headphones, camera). MCP lets AI connect to any external tool, database, or data source using one standard language.</p>
+    </div>
+
+    <div class="hbox cyan">
+      <b>Where is MCP used in this project?</b><br><br>
+      We added <b>Context7 MCP</b> — it sits between Claude Code (the AI coding assistant) and live library documentation. When Claude writes code for Boozo.ai, Context7 fetches the <b>real, up-to-date docs</b> for FastAPI, ChromaDB, Chart.js etc. so Claude doesn't use outdated API patterns.
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <b style="display:block;margin-bottom:14px;font-size:0.9rem">How Context7 MCP works in this project:</b>
+      <div class="mcp-flow">
+        <div class="mcp-node" style="border-color:rgba(0,229,255,0.4)">
+          <span class="n-icon">👨‍💻</span>
+          <div><div class="n-label">You (Developer)</div><div class="n-desc">Ask Claude to add a feature to Boozo.ai</div></div>
+        </div>
+        <div class="mcp-connector"><div class="mcp-line"></div><div class="mcp-label">triggers</div><div class="mcp-arrow"></div></div>
+        <div class="mcp-node" style="border-color:rgba(124,58,237,0.4)">
+          <span class="n-icon">🤖</span>
+          <div><div class="n-label">Claude Code</div><div class="n-desc">The AI coding assistant (that's me!)</div></div>
+        </div>
+        <div class="mcp-connector"><div class="mcp-line"></div><div class="mcp-label">calls via MCP</div><div class="mcp-arrow"></div></div>
+        <div class="mcp-node" style="border-color:rgba(16,185,129,0.4)">
+          <span class="n-icon">🔌</span>
+          <div><div class="n-label">Context7 MCP Server</div><div class="n-desc">npx @upstash/context7-mcp — runs locally</div></div>
+        </div>
+        <div class="mcp-connector"><div class="mcp-line"></div><div class="mcp-label">fetches</div><div class="mcp-arrow"></div></div>
+        <div class="mcp-node" style="border-color:rgba(245,158,11,0.4)">
+          <span class="n-icon">📚</span>
+          <div><div class="n-label">Live Library Docs</div><div class="n-desc">FastAPI, ChromaDB, Chart.js, sentence-transformers…</div></div>
+        </div>
+        <div class="mcp-connector"><div class="mcp-line"></div><div class="mcp-label">returned to</div><div class="mcp-arrow"></div></div>
+        <div class="mcp-node" style="border-color:rgba(0,229,255,0.4)">
+          <span class="n-icon">✅</span>
+          <div><div class="n-label">Claude writes correct code</div><div class="n-desc">Uses real API — no outdated guesses</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="mini-card">
+        <div class="mc-title" style="color:var(--green)">✅ With MCP (Context7)</div>
+        <div class="mc-desc">Claude fetches <b>real docs</b> before writing code. Correct API params, correct version, no bugs from outdated knowledge.</div>
+      </div>
+      <div class="mini-card">
+        <div class="mc-title" style="color:var(--red)">❌ Without MCP</div>
+        <div class="mc-desc">Claude relies on training data which could be months old. May use deprecated APIs or wrong parameter names.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════════ ReAct -->
+  <div class="section" id="react">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(224,64,251,0.1)">🔄</div>
+      <div>
+        <div class="section-title" style="color:var(--pink)">ReAct Loop — The Agent's Brain</div>
+        <div class="section-sub">Reason + Act, repeated until the answer is ready</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p><b>ReAct</b> is the pattern Boozo.ai's brain follows. Instead of answering immediately, it thinks first, then acts, then thinks again — just like how you solve a hard exam question step by step rather than guessing instantly.</p>
+    </div>
+
+    <div class="hbox pink">
+      <b>The exact loop (from agent.py):</b><br><br>
+      1️⃣ <b>Build the prompt</b> — combine system instructions + conversation history + scratchpad<br>
+      2️⃣ <b>Call LLM</b> — send the prompt to Groq/Cerebras/Gemini/Ollama<br>
+      3️⃣ <b>Parse output</b> — find Thought / Action / Final Answer sections<br>
+      4️⃣ <b>If Action</b> → run the tool, add result to scratchpad → go to step 1<br>
+      5️⃣ <b>If Final Answer</b> → stream it to the user → stop<br>
+      6️⃣ <b>Max 5 iterations</b> — stops automatically to prevent infinite loops
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <p><b>The scratchpad</b> is like the agent's rough work book. Every Thought, Action, and Observation gets added to it. On the next loop, the LLM reads the full scratchpad so it knows everything it has already tried. You can see it live in the right panel of Boozo.ai!</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════════ SSE -->
+  <div class="section" id="sse">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(59,130,246,0.1)">📡</div>
+      <div>
+        <div class="section-title" style="color:var(--blue)">SSE — Server-Sent Events</div>
+        <div class="section-sub">How the answer appears letter-by-letter in real time</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p><b>Normal web request:</b> You ask → server thinks → server sends the WHOLE answer at once → you see it.<br><br>
+      <b>SSE:</b> You ask → server starts sending tiny pieces immediately → you see it building up in real time, like watching someone type.</p>
+    </div>
+
+    <div class="hbox blue">
+      <b>How SSE works in this project (main.py):</b><br><br>
+      The <b>/chat endpoint</b> returns a <b>StreamingResponse</b>. As the agent loop runs, each event (thought, action, observation, answer letter) is sent immediately as:<br><br>
+      <code style="color:var(--cyan);background:rgba(0,229,255,0.08);padding:2px 6px;border-radius:4px">data: {"type":"thought","content":"I need to search..."}</code><br><br>
+      The frontend JavaScript reads these one by one and updates the UI instantly. No waiting for the full answer!
+    </div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="mini-card">
+        <div class="mc-title" style="color:var(--blue)">📤 Events sent by server</div>
+        <div class="mc-desc">
+          <code>iteration</code> — which loop number<br>
+          <code>tokens</code> — context window usage<br>
+          <code>thought</code> — agent's thinking<br>
+          <code>action</code> — tool being called<br>
+          <code>observation</code> — tool result<br>
+          <code>chart</code> — chart data<br>
+          <code>answer_token</code> — one letter<br>
+          <code>done</code> — final answer<br>
+          <code>error</code> — something failed
+        </div>
+      </div>
+      <div class="mini-card">
+        <div class="mc-title" style="color:var(--blue)">📥 What frontend does</div>
+        <div class="mc-desc">
+          JavaScript listens to the SSE stream, reads each JSON event, and updates the right part of the UI:<br><br>
+          • Brain steps panel<br>
+          • Context window bar<br>
+          • Tool usage bars<br>
+          • Latency timeline<br>
+          • Live scratchpad<br>
+          • Chat bubble (letter by letter)<br>
+          • Chart canvas (Chart.js)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════════ RAG -->
+  <div class="section" id="rag">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(16,185,129,0.1)">📚</div>
+      <div>
+        <div class="section-title" style="color:var(--green)">RAG — Retrieval-Augmented Generation</div>
+        <div class="section-sub">Give the agent a memory / personal notebook</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p><b>Problem:</b> LLMs only know what they were trained on. They can't remember documents you give them in real time.<br><br>
+      <b>Solution:</b> RAG gives the agent a searchable notebook. You store documents in it, and when you ask a question, relevant pieces are fetched and given to the LLM as context.</p>
+    </div>
+
+    <div style="margin: 14px 0">
+      <b style="display:block;margin-bottom:10px;font-size:0.85rem;color:var(--muted)">INGESTION (storing a document):</b>
+      <div class="rag-row">
+        <div class="rag-box" style="border-color:rgba(16,185,129,0.3)">
+          <span class="r-icon">📄</span>
+          <div class="r-name">Your Text / URL</div>
+          <div class="r-desc">Plain text or a webpage</div>
+        </div>
+        <div class="rag-arrow">→</div>
+        <div class="rag-box" style="border-color:rgba(245,158,11,0.3)">
+          <span class="r-icon">✂️</span>
+          <div class="r-name">Chunking</div>
+          <div class="r-desc">Split into 300-char pieces with overlap</div>
+        </div>
+        <div class="rag-arrow">→</div>
+        <div class="rag-box" style="border-color:rgba(124,58,237,0.3)">
+          <span class="r-icon">🔢</span>
+          <div class="r-name">Embeddings</div>
+          <div class="r-desc">all-MiniLM-L6-v2 converts text → numbers</div>
+        </div>
+        <div class="rag-arrow">→</div>
+        <div class="rag-box" style="border-color:rgba(0,229,255,0.3)">
+          <span class="r-icon">🗄️</span>
+          <div class="r-name">ChromaDB</div>
+          <div class="r-desc">Stores chunks + their number vectors</div>
+        </div>
+      </div>
+
+      <b style="display:block;margin:18px 0 10px;font-size:0.85rem;color:var(--muted)">RETRIEVAL (finding relevant info):</b>
+      <div class="rag-row">
+        <div class="rag-box" style="border-color:rgba(0,229,255,0.3)">
+          <span class="r-icon">❓</span>
+          <div class="r-name">Your Question</div>
+          <div class="r-desc">"What did you learn about Python?"</div>
+        </div>
+        <div class="rag-arrow">→</div>
+        <div class="rag-box" style="border-color:rgba(124,58,237,0.3)">
+          <span class="r-icon">🔢</span>
+          <div class="r-name">Embed Question</div>
+          <div class="r-desc">Question → numbers too</div>
+        </div>
+        <div class="rag-arrow">→</div>
+        <div class="rag-box" style="border-color:rgba(245,158,11,0.3)">
+          <span class="r-icon">🔍</span>
+          <div class="r-name">Similarity Search</div>
+          <div class="r-desc">Find closest chunks by distance</div>
+        </div>
+        <div class="rag-arrow">→</div>
+        <div class="rag-box" style="border-color:rgba(16,185,129,0.3)">
+          <span class="r-icon">📋</span>
+          <div class="r-name">Top 3 Chunks</div>
+          <div class="r-desc">Given to LLM as extra context</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hbox green">
+      <b>Tech used:</b> <b>ChromaDB</b> (vector database — like a special filing cabinet for AI) + <b>sentence-transformers all-MiniLM-L6-v2</b> (a small AI model that converts words into number lists called embeddings). Similarity is measured by how "close" two number lists are.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════════ Tools -->
+  <div class="section" id="tools">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(245,158,11,0.1)">🛠️</div>
+      <div>
+        <div class="section-title" style="color:var(--amber)">Tools — The Agent's Hands</div>
+        <div class="section-sub">Actions the agent can take in the real world</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p>The LLM can only generate text — it can't browse the web or run code on its own. <b>Tools</b> are functions that bridge this gap. The agent writes <code style="color:var(--cyan)">Action: tool_name(argument)</code> and the agent loop runs the real function and feeds the result back.</p>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;margin-top:14px">
+      <table>
+        <tr>
+          <th>Tool</th>
+          <th>File</th>
+          <th>What it does in simple words</th>
+          <th>Security</th>
+        </tr>
+        <tr>
+          <td>🔍 web_search</td>
+          <td>tools.py</td>
+          <td>Searches DuckDuckGo by scraping HTML. No API key needed.</td>
+          <td>Read-only</td>
+        </tr>
+        <tr>
+          <td>💻 code_exec</td>
+          <td>tools.py</td>
+          <td>Runs Python code and returns the output printed to screen.</td>
+          <td>AST sandbox — blocks attribute access so no escape</td>
+        </tr>
+        <tr>
+          <td>🧮 calculator</td>
+          <td>tools.py</td>
+          <td>Does maths safely. No sneaky code allowed — only +−×÷.</td>
+          <td>Subprocess with 2s timeout — kills exponentiation bombs</td>
+        </tr>
+        <tr>
+          <td>📥 rag_ingest</td>
+          <td>tools.py</td>
+          <td>Stores a URL or text into the ChromaDB knowledge base.</td>
+          <td>In-memory only</td>
+        </tr>
+        <tr>
+          <td>🔎 rag_search</td>
+          <td>tools.py</td>
+          <td>Finds the most relevant stored chunks for a question.</td>
+          <td>Read-only</td>
+        </tr>
+        <tr>
+          <td>📊 plot</td>
+          <td>tools.py</td>
+          <td>Accepts a JSON chart spec and renders it with Chart.js in the chat.</td>
+          <td>JSON validation only</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════════ LLM Providers -->
+  <div class="section" id="llm">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(124,58,237,0.1)">⚡</div>
+      <div>
+        <div class="section-title" style="color:#a78bfa">LLM Providers & Fallback Chain</div>
+        <div class="section-sub">Four AI brains — automatic switch if one fails</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p>Boozo.ai tries LLM providers in order. If the first one is busy, rate-limited, or broken, it automatically tries the next one — without you even noticing. It's like having four taxis on speed dial.</p>
+    </div>
+
+    <div class="pipe" style="margin:16px 0">
+      <div class="pipe-box" style="border-color:rgba(0,229,255,0.4);color:var(--cyan)">⚡ Groq<br><span style="font-weight:400;color:var(--muted);font-size:0.75rem">llama-3.3-70b</span></div>
+      <span class="pipe-arrow">→ fail →</span>
+      <div class="pipe-box" style="border-color:rgba(255,100,50,0.4);color:#fb923c">🔥 Cerebras<br><span style="font-weight:400;color:var(--muted);font-size:0.75rem">llama-3.3-70b</span></div>
+      <span class="pipe-arrow">→ fail →</span>
+      <div class="pipe-box" style="border-color:rgba(224,64,251,0.4);color:var(--pink)">✨ Gemini<br><span style="font-weight:400;color:var(--muted);font-size:0.75rem">gemini-2.0-flash</span></div>
+      <span class="pipe-arrow">→ fail →</span>
+      <div class="pipe-box" style="border-color:rgba(100,116,139,0.4);color:var(--muted)">🖥️ Ollama<br><span style="font-weight:400;color:var(--muted);font-size:0.75rem">llama3.2 (local)</span></div>
+    </div>
+
+    <div class="grid2">
+      <div class="mini-card">
+        <div class="mc-title" style="color:var(--cyan)">What is an LLM?</div>
+        <div class="mc-desc">Large Language Model — a neural network trained on billions of text examples. It predicts the next word over and over to generate responses. GPT-4, Claude, Llama — all LLMs.</div>
+      </div>
+      <div class="mini-card">
+        <div class="mc-title" style="color:#fb923c">What is Ollama?</div>
+        <div class="mc-desc">A tool that lets you run LLMs on your own computer (offline). Slower than cloud APIs but free forever and private — your data never leaves your machine.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════════ Embeddings -->
+  <div class="section" id="embeddings">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(59,130,246,0.1)">🔢</div>
+      <div>
+        <div class="section-title" style="color:var(--blue)">Embeddings — Turning Words into Numbers</div>
+        <div class="section-sub">How computers understand meaning mathematically</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p>Computers can't understand language — they only understand numbers. An <b>embedding model</b> converts any sentence into a list of ~384 numbers called a <b>vector</b>. Sentences with similar meaning get similar numbers — so "dog" and "puppy" end up numerically close, while "dog" and "aeroplane" are far apart.</p>
+    </div>
+
+    <div class="hbox blue">
+      <b>Model used:</b> <b>all-MiniLM-L6-v2</b> from sentence-transformers. It's tiny (80MB) but fast and accurate enough for this project. When you call <code style="color:var(--cyan)">rag_ingest</code> or <code style="color:var(--cyan)">rag_search</code>, this model runs locally on your CPU to create or compare vectors. ChromaDB then finds the nearest vectors using cosine similarity.
+    </div>
+
+    <div class="hbox purple" style="margin-top:10px">
+      <b>Cosine similarity — simple version:</b> Imagine two arrows pointing in space. If they point in almost the same direction → similar meaning. If they point opposite ways → completely different meaning. ChromaDB measures the angle between vectors to rank which stored chunks best match your query.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════════ Sandbox -->
+  <div class="section" id="sandbox">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(239,68,68,0.1)">🔒</div>
+      <div>
+        <div class="section-title" style="color:#f87171">Security — The Code Sandbox</div>
+        <div class="section-sub">Making sure code_exec can't do evil things</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p>Letting an AI run arbitrary Python code is dangerous. Without protection, someone could ask the agent to delete files, steal passwords, or crash the system. The sandbox prevents this with two layers.</p>
+    </div>
+
+    <div class="grid2">
+      <div class="mini-card">
+        <div class="mc-title" style="color:#f87171">🛡️ Layer 1 — AST Check</div>
+        <div class="mc-desc">Before running, code is parsed into an <b>Abstract Syntax Tree</b>. If any node is an attribute access (<code>x.y</code>), it's rejected immediately. This blocks the classic Python escape: <code>().__class__.__bases__[0].__subclasses__()</code></div>
+      </div>
+      <div class="mini-card">
+        <div class="mc-title" style="color:var(--amber)">🛡️ Layer 2 — Restricted Builtins</div>
+        <div class="mc-desc">Only safe built-in functions are available: <code>print, range, len, int, float, str, list, dict, sum, max, min, abs, round, sorted</code>. No <code>open()</code>, no <code>import</code>, no <code>exec()</code>.</div>
+      </div>
+    </div>
+
+    <div class="hbox amber" style="margin-top:14px">
+      <b>Calculator extra protection:</b> The calculator uses <code>subprocess.run(..., timeout=2)</code> — it runs in a completely separate OS process. If someone types <code>9**9**9**9</code> (which would hang Python forever), the OS kills the process after 2 seconds. The GIL (Python's lock) can't save you from this attack — only OS-level kill can.
+    </div>
+
+    <div class="tags">
+      <span class="tag">AST validation</span>
+      <span class="tag">Restricted builtins</span>
+      <span class="tag">Subprocess isolation</span>
+      <span class="tag">OS timeout kill</span>
+      <span class="tag">No file I/O</span>
+      <span class="tag">No network access</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Back link -->
+  <div style="text-align:center">
+    <a href="flowchart.html" style="color:var(--cyan);font-size:0.9rem;text-decoration:none;border:1px solid var(--border);padding:10px 22px;border-radius:999px;display:inline-block;transition:border-color 0.2s" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)'">← Back to Step-by-Step Flow</a>
+  </div>
+
+  <script>
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.section').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
