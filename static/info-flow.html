@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boozo.ai — Information Signal Trace</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #04060d;
+      --bg2:     #07090f;
+      --surface: rgba(255,255,255,0.035);
+      --surface2: rgba(255,255,255,0.06);
+      --border:  rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.14);
+
+      --cyan:    #00e5c8;
+      --cyan-d:  rgba(0,229,200,0.12);
+      --cyan-g:  rgba(0,229,200,0.25);
+      --amber:   #ffb020;
+      --amber-d: rgba(255,176,32,0.12);
+      --pink:    #ff3f80;
+      --pink-d:  rgba(255,63,128,0.12);
+      --blue:    #4d9fff;
+      --blue-d:  rgba(77,159,255,0.12);
+      --green:   #39e87a;
+      --green-d: rgba(57,232,122,0.12);
+      --purple:  #bf7fff;
+      --purple-d:rgba(191,127,255,0.12);
+      --orange:  #ff7b3d;
+      --orange-d:rgba(255,123,61,0.12);
+      --red:     #ff4d4d;
+      --red-d:   rgba(255,77,77,0.12);
+
+      --t:       #d0d4e0;
+      --tb:      #eef0f8;
+      --td:      #4a5570;
+
+      --track: 2px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--t);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* PCB grid */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,200,0.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,200,0.022) 1px, transparent 1px);
+      background-size: 36px 36px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* top glow */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -300px; left: 50%;
+      transform: translateX(-50%);
+      width: 900px; height: 700px;
+      background: radial-gradient(ellipse, rgba(0,229,200,0.055) 0%, transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── HEADER ─────────────────────────────── */
+    .header {
+      position: relative; z-index: 10;
+      text-align: center;
+      padding: 72px 24px 48px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pre-label {
+      font-size: 10px; font-weight: 400;
+      letter-spacing: 5px; text-transform: uppercase;
+      color: var(--cyan); opacity: 0.7;
+      margin-bottom: 18px;
+    }
+
+    .header h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(32px, 6vw, 60px);
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: var(--tb);
+      text-shadow: 0 0 50px var(--cyan-g), 0 0 100px rgba(0,229,200,0.08);
+      margin-bottom: 8px;
+    }
+
+    .header h1 em { font-style: normal; color: var(--cyan); }
+
+    .subtitle {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--cyan); opacity: 0.85;
+      margin-bottom: 12px;
+    }
+
+    .header-desc {
+      font-size: 11px; font-weight: 300;
+      color: var(--td); letter-spacing: 1px;
+    }
+
+    /* ─── LEGEND ─────────────────────────────── */
+    .legend {
+      position: relative; z-index: 10;
+      display: flex; flex-wrap: wrap; gap: 6px 18px;
+      justify-content: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .leg {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 10px; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--td);
+    }
+
+    .leg-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+    }
+
+    /* ─── CONTAINER ──────────────────────────── */
+    .wrap {
+      position: relative; z-index: 10;
+      max-width: 980px; margin: 0 auto;
+      padding: 56px 24px 96px;
+    }
+
+    /* ─── SECTION TITLE ──────────────────────── */
+    .sec-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 5px; text-transform: uppercase;
+      color: var(--td);
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .sec-title::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── VERTICAL FLOW ──────────────────────── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .flow-step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 0 16px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+
+    .flow-step.vis {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* left: number + track line */
+    .step-track {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    .step-num {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--border2);
+      background: var(--bg2);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px; font-weight: 700;
+      color: var(--td);
+      flex-shrink: 0;
+      position: relative;
+      transition: all 0.3s;
+    }
+
+    .flow-step:hover .step-num {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 14px var(--cyan-g);
+    }
+
+    .step-line {
+      flex: 1;
+      width: 2px;
+      min-height: 28px;
+      background: linear-gradient(to bottom,
+        rgba(0,229,200,0.35),
+        rgba(0,229,200,0.08) 70%,
+        transparent
+      );
+      position: relative;
+      overflow: hidden;
+    }
+
+    .step-line::after {
+      content: '';
+      position: absolute;
+      top: -40px; left: 0; right: 0;
+      height: 40px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.6), transparent);
+      animation: pulse-down 2.4s linear infinite;
+    }
+
+    @keyframes pulse-down {
+      0%   { top: -40px; }
+      100% { top: 100%; }
+    }
+
+    /* stagger animation delays for each line */
+    .flow-step:nth-child(1)  .step-line::after { animation-delay: 0s; }
+    .flow-step:nth-child(2)  .step-line::after { animation-delay: 0.3s; }
+    .flow-step:nth-child(3)  .step-line::after { animation-delay: 0.6s; }
+    .flow-step:nth-child(4)  .step-line::after { animation-delay: 0.9s; }
+    .flow-step:nth-child(5)  .step-line::after { animation-delay: 1.2s; }
+    .flow-step:nth-child(6)  .step-line::after { animation-delay: 1.5s; }
+    .flow-step:nth-child(7)  .step-line::after { animation-delay: 1.8s; }
+    .flow-step:nth-child(8)  .step-line::after { animation-delay: 2.1s; }
+    .flow-step:nth-child(9)  .step-line::after { animation-delay: 2.4s; }
+    .flow-step:nth-child(10) .step-line::after { animation-delay: 2.7s; }
+
+    /* right: card */
+    .step-body {
+      padding-bottom: 28px;
+    }
+
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 20px;
+      position: relative;
+      transition: all 0.2s;
+      overflow: hidden;
+    }
+
+    .step-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      border-radius: 8px 0 0 8px;
+    }
+
+    .step-card:hover {
+      background: var(--surface2);
+      border-color: var(--border2);
+    }
+
+    /* accent colors */
+    .ac-cyan::before   { background: var(--cyan); }
+    .ac-amber::before  { background: var(--amber); }
+    .ac-pink::before   { background: var(--pink); }
+    .ac-blue::before   { background: var(--blue); }
+    .ac-green::before  { background: var(--green); }
+    .ac-purple::before { background: var(--purple); }
+    .ac-orange::before { background: var(--orange); }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .card-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--tb);
+    }
+
+    .card-file {
+      font-size: 11px; font-weight: 600;
+      color: var(--cyan); font-style: italic;
+      margin-top: 2px;
+    }
+
+    .card-ext-row {
+      display: flex; flex-wrap: wrap; gap: 5px;
+      align-items: flex-start;
+    }
+
+    .ext {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.5px; text-transform: uppercase;
+      padding: 3px 9px; border-radius: 3px;
+    }
+
+    .ext-cyan   { background: var(--cyan-d);   color: var(--cyan);   border: 1px solid rgba(0,229,200,0.25); }
+    .ext-amber  { background: var(--amber-d);  color: var(--amber);  border: 1px solid rgba(255,176,32,0.25); }
+    .ext-pink   { background: var(--pink-d);   color: var(--pink);   border: 1px solid rgba(255,63,128,0.25); }
+    .ext-blue   { background: var(--blue-d);   color: var(--blue);   border: 1px solid rgba(77,159,255,0.25); }
+    .ext-green  { background: var(--green-d);  color: var(--green);  border: 1px solid rgba(57,232,122,0.25); }
+    .ext-purple { background: var(--purple-d); color: var(--purple); border: 1px solid rgba(191,127,255,0.25); }
+    .ext-orange { background: var(--orange-d); color: var(--orange); border: 1px solid rgba(255,123,61,0.25); }
+    .ext-red    { background: var(--red-d);    color: var(--red);    border: 1px solid rgba(255,77,77,0.25); }
+
+    .card-desc {
+      font-size: 11px; font-weight: 300;
+      color: var(--td); line-height: 1.75;
+      margin-bottom: 12px;
+    }
+
+    .card-detail {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 10px 14px;
+      font-size: 10px; font-weight: 400;
+      color: var(--td); line-height: 1.8;
+    }
+
+    .card-detail code {
+      color: var(--amber); font-weight: 600;
+    }
+
+    /* sub-rows inside card */
+    .sub-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 10px; color: var(--td);
+      margin-top: 6px;
+    }
+
+    .sub-row-label {
+      color: var(--pink); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      min-width: 64px;
+    }
+
+    /* ─── ARROW DIVIDER ─────────────────────── */
+    .arrow-div {
+      text-align: center;
+      color: var(--td);
+      font-size: 18px;
+      margin: 4px 0 4px 32px;
+      opacity: 0.5;
+    }
+
+    /* ─── LLM PROVIDER CHAIN ─────────────────── */
+    .llm-chain {
+      display: flex; align-items: center;
+      flex-wrap: wrap; gap: 0;
+      margin-top: 12px;
+    }
+
+    .llm-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 11px; font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .llm-box.primary {
+      border-color: rgba(0,229,200,0.4);
+      color: var(--cyan);
+      background: var(--cyan-d);
+    }
+
+    .llm-box:not(.primary) { color: var(--td); }
+
+    .llm-sep {
+      font-size: 11px; color: var(--td);
+      padding: 0 8px; opacity: 0.6;
+    }
+
+    .fallback-label {
+      font-size: 9px; letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--td); opacity: 0.6;
+      margin-left: 10px;
+    }
+
+    /* ─── SSE EVENT TYPES ─────────────────────── */
+    .events-row {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-top: 12px;
+    }
+
+    .evt {
+      font-size: 10px; font-weight: 600;
+      padding: 3px 10px; border-radius: 3px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ─── TOOLS SECTION ──────────────────────── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .tool-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 14px 16px;
+      transition: all 0.2s;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.4s, transform 0.4s, background 0.2s, border-color 0.2s;
+    }
+
+    .tool-card.vis {
+      opacity: 1;
+      transform: none;
+    }
+
+    .tool-card:hover {
+      background: var(--surface2);
+      border-color: var(--border2);
+    }
+
+    .tool-fn {
+      font-size: 12px; font-weight: 600;
+      color: var(--amber); margin-bottom: 6px;
+    }
+
+    .tool-fn span {
+      color: var(--td); font-weight: 400;
+    }
+
+    .tool-flow-line {
+      display: flex; align-items: center;
+      gap: 5px; font-size: 10px;
+      color: var(--td); margin: 3px 0;
+    }
+
+    .tool-flow-line .arrow { color: var(--cyan); opacity: 0.6; }
+
+    .tool-note {
+      font-size: 10px; font-weight: 300;
+      color: var(--td); margin-top: 8px;
+      line-height: 1.6;
+    }
+
+    /* ─── PERSISTENCE ────────────────────────── */
+    .persist-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .persist-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 22px 20px;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.4s, transform 0.4s, background 0.2s;
+    }
+
+    .persist-card.vis {
+      opacity: 1;
+      transform: none;
+    }
+
+    .persist-card:hover { background: var(--surface2); }
+
+    .persist-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+    }
+
+    .p-sqlite::after  { background: var(--amber); }
+    .p-redis::after   { background: var(--pink); }
+    .p-chroma::after  { background: var(--purple); }
+
+    .persist-glyph {
+      font-size: 30px; margin-bottom: 12px;
+    }
+
+    .persist-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--tb); margin-bottom: 4px;
+    }
+
+    .persist-file {
+      font-size: 11px; font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .persist-desc {
+      font-size: 10px; font-weight: 300;
+      color: var(--td); line-height: 1.7;
+    }
+
+    /* ─── SPACER / DIVIDER ───────────────────── */
+    .section-gap { margin-top: 52px; }
+
+    /* ─── FOOTER ─────────────────────────────── */
+    .footer {
+      position: relative; z-index: 10;
+      text-align: center;
+      padding: 28px 24px;
+      border-top: 1px solid var(--border);
+      font-size: 10px; font-weight: 300;
+      color: var(--td); letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    /* ─── RESPONSIVE ─────────────────────────── */
+    @media (max-width: 640px) {
+      .persist-grid { grid-template-columns: 1fr; }
+      .tools-grid   { grid-template-columns: 1fr; }
+      .llm-chain    { gap: 4px; }
+      .card-top     { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════════════════════ -->
+<header class="header">
+  <p class="pre-label">◈ &nbsp; architecture diagram &nbsp; ◈</p>
+  <h1>BOOZO<em>.ai</em></h1>
+  <p class="subtitle">Information Signal Trace</p>
+  <p class="header-desc">every format &amp; file extension — start to finish — every stop the data makes</p>
+</header>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="leg"><div class="leg-dot" style="background:var(--cyan)"></div> main flow</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--amber)"></div> .py module</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--pink)"></div> wire format</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--blue)"></div> external api</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--green)"></div> tool output</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--purple)"></div> persistence</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--orange)"></div> cache layer</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════════════════════════════════ -->
+<div class="wrap">
+
+  <!-- ─── SECTION: MAIN FLOW ─────────────────────── -->
+  <div class="sec-title">Main Information Flow</div>
+
+  <div class="flow">
+
+    <!-- STEP 1: BROWSER -->
+    <div class="flow-step">
+      <div class="step-track">
+        <div class="step-num">01</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-card ac-cyan">
+          <div class="card-top">
+            <div>
+              <div class="card-title">BROWSER — USER INPUT</div>
+              <div class="card-file">static/index.html &nbsp;|&nbsp; .html &nbsp;/&nbsp; .js</div>
+            </div>
+            <div class="card-ext-row">
+              <span class="ext ext-cyan">.html</span>
+              <span class="ext ext-amber">.js</span>
+              <span class="ext ext-pink">text/plain</span>
+              <span class="ext ext-blue">base64</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            The user types a message in the browser. Optionally attaches an image.
+            JavaScript reads the input as <strong>text/plain</strong>. Images are encoded as
+            <strong>base64 data URLs</strong> (e.g. <code style="color:var(--amber)">data:image/png;base64,...</code>).
+            Conversation history is held in memory as a JS array of objects.
+          </p>
+          <div class="card-detail">
+            <div class="sub-row">
+              <span class="sub-row-label">Text</span>
+              <span>String — max 4 000 chars, validated client-side</span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">Image</span>
+              <span>FileReader API → <code>data:{mime};base64,{b64}</code></span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">History</span>
+              <span>JS Array&lt;{user: string, assistant: string}&gt;</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: HTTP REQUEST -->
+    <div class="flow-step">
+      <div class="step-track">
+        <div class="step-num">02</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-card ac-pink">
+          <div class="card-top">
+            <div>
+              <div class="card-title">HTTP REQUEST &mdash; POST /chat</div>
+              <div class="card-file">Wire format over TCP/IP</div>
+            </div>
+            <div class="card-ext-row">
+              <span class="ext ext-pink">application/json</span>
+              <span class="ext ext-orange">HTTP/1.1</span>
+              <span class="ext ext-amber">cookie</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            JavaScript serialises all fields into a single <strong>JSON</strong> body and POSTs to <code style="color:var(--amber)">/chat</code>.
+            The session cookie (set by Starlette <code>SessionMiddleware</code>) travels in the request header for auth identity.
+          </p>
+          <div class="card-detail">
+            <code>{</code><br>
+            &nbsp;&nbsp;<code>"message":</code> string,<br>
+            &nbsp;&nbsp;<code>"history":</code> [{user, assistant}, …],<br>
+            &nbsp;&nbsp;<code>"image":</code> "data:image/…;base64,…" | null,<br>
+            &nbsp;&nbsp;<code>"image_mime":</code> "image/png" | null,<br>
+            &nbsp;&nbsp;<code>"selected_model":</code> "groq:llama-…" | null,<br>
+            &nbsp;&nbsp;<code>"session_id":</code> string | null<br>
+            <code>}</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: FASTAPI ROUTER -->
+    <div class="flow-step">
+      <div class="step-track">
+        <div class="step-num">03</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-card ac-amber">
+          <div class="card-top">
+            <div>
+              <div class="card-title">FASTAPI ROUTER</div>
+              <div class="card-file">main.py &nbsp;|&nbsp; .py</div>
+            </div>
+            <div class="card-ext-row">
+              <span class="ext ext-amber">.py</span>
+              <span class="ext ext-cyan">Pydantic</span>
+              <span class="ext ext-orange">cookie/session</span>
+              <span class="ext ext-pink">HTTP 429</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            FastAPI auto-deserialises the JSON body into a <strong>Pydantic</strong> <code>ChatRequest</code> model (validated Python dataclass).
+            <code>SessionMiddleware</code> decodes the signed cookie into a Python dict.
+            Rate-limiting checks against Redis via <code>cache.py</code>.
+            If allowed, calls the agent.
+          </p>
+          <div class="card-detail">
+            <div class="sub-row">
+              <span class="sub-row-label">Input</span>
+              <span>JSON body → Pydantic <code>ChatRequest</code> Python object</span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">Auth</span>
+              <span>Starlette signed cookie → <code>request.session["user_id"]</code></span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">Rate limit</span>
+              <span>Redis key (IP or user_id) → count in-memory</span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">Output</span>
+              <span>Calls <code>run_agent()</code> → returns StreamingResponse</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4: REACT AGENT -->
+    <div class="flow-step">
+      <div class="step-track">
+        <div class="step-num">04</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-card ac-amber">
+          <div class="card-top">
+            <div>
+              <div class="card-title">REACT AGENT LOOP</div>
+              <div class="card-file">agent.py &nbsp;|&nbsp; .py</div>
+            </div>
+            <div class="card-ext-row">
+              <span class="ext ext-amber">.py</span>
+              <span class="ext ext-cyan">plain text</span>
+              <span class="ext ext-pink">Python dict</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            The core ReAct loop (max 5 iterations). On each iteration it builds a <strong>plain text</strong> prompt string,
+            calls the LLM, parses the response with regex into a Python <strong>dict</strong>
+            (<code>thought</code>, <code>action</code>, <code>final_answer</code>),
+            and decides whether to call a tool or emit the final answer.
+          </p>
+          <div class="card-detail">
+            <div class="sub-row">
+              <span class="sub-row-label">Scratchpad</span>
+              <span>Plain text string — grows with each Thought/Observation</span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">LLM output</span>
+              <span>Raw string → regex parsed → Python dict</span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">Yields</span>
+              <span>Python generator — yields dicts → serialised to SSE</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5: PROMPT BUILDER -->
+    <div class="flow-step">
+      <div class="step-track">
+        <div class="step-num">05</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-card ac-orange">
+          <div class="card-top">
+            <div>
+              <div class="card-title">PROMPT TEMPLATE</div>
+              <div class="card-file">prompts.py &nbsp;|&nbsp; .py</div>
+            </div>
+            <div class="card-ext-row">
+              <span class="ext ext-orange">.py</span>
+              <span class="ext ext-cyan">plain text</span>
+              <span class="ext ext-amber">f-string</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            <code>SYSTEM_PROMPT</code> and <code>REACT_TEMPLATE</code> are plain Python strings.
+            The template is formatted with <strong>Python f-strings</strong> — injecting
+            system instructions, conversation history, the user message, and the running scratchpad
+            into one large <strong>plain-text</strong> prompt string.
+          </p>
+          <div class="card-detail">
+            <div class="sub-row">
+              <span class="sub-row-label">Format</span>
+              <span>Plain UTF-8 text — no markup or special encoding</span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">Approx size</span>
+              <span>~len(prompt) / 4 tokens; capped at 8 192 ctx tokens</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 6: LLM API CALL -->
+    <div class="flow-step">
+      <div class="step-track">
+        <div class="step-num">06</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-card ac-blue">
+          <div class="card-top">
+            <div>
+              <div class="card-title">LLM API CALL</div>
+              <div class="card-file">agent.py → external HTTPS endpoints</div>
+            </div>
+            <div class="card-ext-row">
+              <span class="ext ext-blue">application/json</span>
+              <span class="ext ext-pink">text/event-stream</span>
+              <span class="ext ext-cyan">HTTPS/TLS</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            The prompt is wrapped in an <strong>OpenAI-compatible JSON</strong> payload and sent via <code>httpx</code>.
+            Groq streams tokens as <strong>Server-Sent Events</strong> (SSE) — each line is
+            <code>data: {"choices":[{"delta":{"content":"…"}}]}</code>.
+            Other providers return a single <strong>JSON</strong> response body.
+          </p>
+
+          <!-- Provider fallback chain -->
+          <div class="llm-chain">
+            <div class="llm-box primary">Groq (stream)</div>
+            <div class="llm-sep">→</div>
+            <div class="llm-box">Cerebras</div>
+            <div class="llm-sep">→</div>
+            <div class="llm-box">Gemini</div>
+            <div class="llm-sep">→</div>
+            <div class="llm-box">Ollama (local)</div>
+            <span class="fallback-label">fallback chain</span>
+          </div>
+
+          <div class="card-detail" style="margin-top:12px">
+            <div class="sub-row">
+              <span class="sub-row-label">Request</span>
+              <span>JSON — <code>{model, messages, temperature, max_tokens, stream}</code></span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">Groq resp</span>
+              <span>SSE stream — <code>data: {…delta…}</code> lines + <code>data: [DONE]</code></span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">Others</span>
+              <span>Single JSON — <code>choices[0].message.content</code></span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">Vision</span>
+              <span>Image sent as <code>{type:"image_url", image_url:{url:"data:…"}}</code></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 7: TOOL DISPATCH -->
+    <div class="flow-step">
+      <div class="step-track">
+        <div class="step-num">07</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-card ac-green">
+          <div class="card-top">
+            <div>
+              <div class="card-title">TOOL DISPATCHER</div>
+              <div class="card-file">tools.py &nbsp;|&nbsp; .py</div>
+            </div>
+            <div class="card-ext-row">
+              <span class="ext ext-amber">.py</span>
+              <span class="ext ext-green">plain text</span>
+              <span class="ext ext-pink">regex parse</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            When the LLM emits <code>Action: tool_name("arg")</code>, the agent extracts it and calls
+            <code>dispatch_tool()</code>. The action string is parsed by <strong>regex</strong> into
+            <code>tool_name</code> + <code>arg</code>, then the matching Python function is called.
+            Each tool returns a plain <strong>text</strong> string as its observation
+            (except <code>plot</code> which returns a <code>CHART:</code>-prefixed JSON string).
+          </p>
+          <div class="card-detail">
+            <div class="sub-row">
+              <span class="sub-row-label">Input</span>
+              <span>Plain text — e.g. <code>web_search("python async")</code></span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">Parse</span>
+              <span>Regex <code>(\w+)\((.+)\)</code> → tool name + arg string</span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">Output</span>
+              <span>Plain text observation, or <code>CHART:{json}</code> for plot</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 8: AGENT EVENTS / SSE OUT -->
+    <div class="flow-step">
+      <div class="step-track">
+        <div class="step-num">08</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-card ac-pink">
+          <div class="card-top">
+            <div>
+              <div class="card-title">SSE EVENT STREAM</div>
+              <div class="card-file">main.py → StreamingResponse &nbsp;|&nbsp; .py</div>
+            </div>
+            <div class="card-ext-row">
+              <span class="ext ext-pink">text/event-stream</span>
+              <span class="ext ext-cyan">application/json</span>
+              <span class="ext ext-amber">UTF-8</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            Each Python dict yielded by the agent is serialised with <code>json.dumps()</code>
+            and wrapped in SSE format: <code>data: {…}\n\n</code>.
+            The browser reads this stream via the <code>EventSource</code> API or <code>fetch()</code> with
+            a readable stream reader. Response header: <code>Cache-Control: no-cache</code>.
+          </p>
+          <p style="font-size:10px; color:var(--td); margin-bottom:8px; margin-top:10px; text-transform:uppercase; letter-spacing:1px;">Event type field values:</p>
+          <div class="events-row">
+            <span class="evt" style="background:var(--cyan-d); color:var(--cyan); border:1px solid rgba(0,229,200,0.25)">thought</span>
+            <span class="evt" style="background:var(--amber-d); color:var(--amber); border:1px solid rgba(255,176,32,0.25)">action</span>
+            <span class="evt" style="background:var(--green-d); color:var(--green); border:1px solid rgba(57,232,122,0.25)">observation</span>
+            <span class="evt" style="background:var(--blue-d); color:var(--blue); border:1px solid rgba(77,159,255,0.25)">answer_token</span>
+            <span class="evt" style="background:var(--purple-d); color:var(--purple); border:1px solid rgba(191,127,255,0.25)">done</span>
+            <span class="evt" style="background:var(--red-d); color:var(--red); border:1px solid rgba(255,77,77,0.25)">error</span>
+            <span class="evt" style="background:var(--orange-d); color:var(--orange); border:1px solid rgba(255,123,61,0.25)">chart</span>
+            <span class="evt" style="background:var(--cyan-d); color:var(--td); border:1px solid var(--border)">iteration</span>
+            <span class="evt" style="background:var(--cyan-d); color:var(--td); border:1px solid var(--border)">tokens</span>
+            <span class="evt" style="background:var(--cyan-d); color:var(--td); border:1px solid var(--border)">timing</span>
+            <span class="evt" style="background:var(--cyan-d); color:var(--td); border:1px solid var(--border)">model_used</span>
+            <span class="evt" style="background:var(--cyan-d); color:var(--td); border:1px solid var(--border)">scratchpad</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 9: BROWSER RENDER -->
+    <div class="flow-step">
+      <div class="step-track">
+        <div class="step-num">09</div>
+        <div class="step-line" style="background:transparent"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-card ac-cyan">
+          <div class="card-top">
+            <div>
+              <div class="card-title">BROWSER — RENDER OUTPUT</div>
+              <div class="card-file">static/index.html &nbsp;|&nbsp; .html &nbsp;/&nbsp; .js</div>
+            </div>
+            <div class="card-ext-row">
+              <span class="ext ext-cyan">.html</span>
+              <span class="ext ext-amber">.js</span>
+              <span class="ext ext-blue">DOM</span>
+              <span class="ext ext-green">markdown</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            The browser's JS reads each SSE event. <code>answer_token</code> events are concatenated
+            and rendered as <strong>Markdown → HTML</strong>. Chart events render a
+            Chart.js canvas. Thought/action/observation events update the reasoning panel.
+            Final state is a fully rendered <strong>HTML</strong> response in the DOM.
+          </p>
+          <div class="card-detail">
+            <div class="sub-row">
+              <span class="sub-row-label">Text</span>
+              <span>Markdown string → innerHTML (marked.js / DOMPurify)</span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">Charts</span>
+              <span>JSON spec → <code>new Chart(canvas, config)</code> (Chart.js)</span>
+            </div>
+            <div class="sub-row">
+              <span class="sub-row-label">Saved to DB</span>
+              <span>JS calls POST <code>/api/sessions/{id}/message</code> with JSON body</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /flow -->
+
+
+  <!-- ─── SECTION: TOOLS ───────────────────────── -->
+  <div class="section-gap">
+    <div class="sec-title">Tool Format Chains &nbsp;(tools.py)</div>
+    <div class="tools-grid">
+
+      <div class="tool-card">
+        <div class="tool-fn">web_search<span>("query")</span></div>
+        <div class="tool-flow-line"><span class="ext ext-cyan" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>HTTP GET DuckDuckGo</span></div>
+        <div class="tool-flow-line"><span class="ext ext-pink" style="font-size:9px">text/html</span><span class="arrow">→</span><span>BeautifulSoup parse</span></div>
+        <div class="tool-flow-line"><span class="ext ext-green" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>result string</span></div>
+        <div class="tool-note">Redis-cached 1 h TTL (cache.py)</div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-fn">code_exec<span>("python code")</span></div>
+        <div class="tool-flow-line"><span class="ext ext-amber" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>AST parse + validate</span></div>
+        <div class="tool-flow-line"><span class="ext ext-orange" style="font-size:9px">Python AST</span><span class="arrow">→</span><span>exec() sandbox</span></div>
+        <div class="tool-flow-line"><span class="ext ext-green" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>stdout capture</span></div>
+        <div class="tool-note">No attribute access; restricted builtins only</div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-fn">calculator<span>("expr")</span></div>
+        <div class="tool-flow-line"><span class="ext ext-amber" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>regex whitelist check</span></div>
+        <div class="tool-flow-line"><span class="ext ext-orange" style="font-size:9px">subprocess</span><span class="arrow">→</span><span>isolated python -c</span></div>
+        <div class="tool-flow-line"><span class="ext ext-green" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>stdout number string</span></div>
+        <div class="tool-note">Timeout: 2 s. Operators: + - * / ** % ()</div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-fn">rag_ingest<span>("url or text")</span></div>
+        <div class="tool-flow-line"><span class="ext ext-pink" style="font-size:9px">text/html</span><span class="arrow">→</span><span>BeautifulSoup scrape</span></div>
+        <div class="tool-flow-line"><span class="ext ext-cyan" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>300-char chunks</span></div>
+        <div class="tool-flow-line"><span class="ext ext-purple" style="font-size:9px">float32 vectors</span><span class="arrow">→</span><span>ChromaDB upsert</span></div>
+        <div class="tool-note">URL → Redis cache 24 h. Embeddings: all-MiniLM-L6-v2</div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-fn">rag_search<span>("query")</span></div>
+        <div class="tool-flow-line"><span class="ext ext-cyan" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>embed query</span></div>
+        <div class="tool-flow-line"><span class="ext ext-purple" style="font-size:9px">float32 vectors</span><span class="arrow">→</span><span>cosine similarity</span></div>
+        <div class="tool-flow-line"><span class="ext ext-green" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>top-3 chunks</span></div>
+        <div class="tool-note">Persistent ChromaDB in chroma/ directory</div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-fn">plot<span>("json_spec")</span></div>
+        <div class="tool-flow-line"><span class="ext ext-pink" style="font-size:9px">application/json</span><span class="arrow">→</span><span>json.loads() validate</span></div>
+        <div class="tool-flow-line"><span class="ext ext-orange" style="font-size:9px">CHART: prefix</span><span class="arrow">→</span><span>agent detects prefix</span></div>
+        <div class="tool-flow-line"><span class="ext ext-blue" style="font-size:9px">JSON via SSE</span><span class="arrow">→</span><span>Chart.js canvas</span></div>
+        <div class="tool-note">Types: bar · line · pie · doughnut · radar</div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-fn">wikipedia_search<span>("topic")</span></div>
+        <div class="tool-flow-line"><span class="ext ext-cyan" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>HTTP GET Wikipedia REST</span></div>
+        <div class="tool-flow-line"><span class="ext ext-blue" style="font-size:9px">application/json</span><span class="arrow">→</span><span>.extract field</span></div>
+        <div class="tool-flow-line"><span class="ext ext-green" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>markdown summary</span></div>
+        <div class="tool-note">Endpoint: /api/rest_v1/page/summary/{query}</div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-fn">get_weather<span>("city")</span></div>
+        <div class="tool-flow-line"><span class="ext ext-cyan" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>HTTP GET wttr.in</span></div>
+        <div class="tool-flow-line"><span class="ext ext-green" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>?format=4 response</span></div>
+        <div class="tool-note">No API key needed. Timeout: 8 s.</div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-fn">remember<span>("fact")</span></div>
+        <div class="tool-flow-line"><span class="ext ext-cyan" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>cache.memory_append()</span></div>
+        <div class="tool-flow-line"><span class="ext ext-orange" style="font-size:9px">Redis list</span><span class="arrow">→</span><span>key: mem:{user_id}</span></div>
+        <div class="tool-note">Persists across sessions. Requires login (user_id).</div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-fn">recall<span>("topic")</span></div>
+        <div class="tool-flow-line"><span class="ext ext-orange" style="font-size:9px">Redis list</span><span class="arrow">→</span><span>cache.memory_get_all()</span></div>
+        <div class="tool-flow-line"><span class="ext ext-cyan" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>keyword-filtered facts</span></div>
+        <div class="tool-note">Returns last 10 facts if no keyword match found.</div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-fn">datetime_now<span>("tz")</span></div>
+        <div class="tool-flow-line"><span class="ext ext-cyan" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>zoneinfo.ZoneInfo(tz)</span></div>
+        <div class="tool-flow-line"><span class="ext ext-green" style="font-size:9px">text/plain</span><span class="arrow">→</span><span>strftime formatted string</span></div>
+        <div class="tool-note">No external calls. Pure Python stdlib.</div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ─── SECTION: PERSISTENCE ─────────────────── -->
+  <div class="section-gap">
+    <div class="sec-title">Persistence &amp; Cache Layer</div>
+    <div class="persist-grid">
+
+      <div class="persist-card p-sqlite">
+        <div class="persist-glyph">&#128190;</div>
+        <div class="persist-name">SQLite Database</div>
+        <div class="persist-file" style="color:var(--amber)">boozo.db &nbsp;|&nbsp; .db &nbsp;/&nbsp; .sqlite3</div>
+        <div class="formats" style="margin-bottom:10px">
+          <span class="ext ext-amber">.db</span>
+          <span class="ext ext-orange">SQL</span>
+          <span class="ext ext-cyan">binary B-tree</span>
+        </div>
+        <p class="persist-desc">
+          Managed by <strong>db.py</strong> (.py). Three tables:
+          <br><br>
+          <strong>users</strong> — google_id, email, name, avatar<br>
+          <strong>sessions</strong> — id, user_id, title, created_at<br>
+          <strong>messages</strong> — session_id, role, content, ts<br>
+          <br>
+          Wire format: Python <code>sqlite3</code> module — parameterised SQL strings → binary SQLite file.
+          Auto-title via simple heuristic on first user message.
+        </p>
+      </div>
+
+      <div class="persist-card p-redis">
+        <div class="persist-glyph">&#9889;</div>
+        <div class="persist-name">Redis Cache</div>
+        <div class="persist-file" style="color:var(--pink)">cache.py &nbsp;|&nbsp; .py &nbsp;— in-memory</div>
+        <div class="formats" style="margin-bottom:10px">
+          <span class="ext ext-pink">key-value</span>
+          <span class="ext ext-orange">TTL</span>
+          <span class="ext ext-amber">Redis protocol</span>
+        </div>
+        <p class="persist-desc">
+          Managed by <strong>cache.py</strong> (.py). Falls back to an in-process Python dict if Redis
+          is unavailable.<br><br>
+          <strong>search:{query}</strong> → text result · 1 h TTL<br>
+          <strong>url:{url}</strong> → scraped text · 24 h TTL<br>
+          <strong>mem:{user_id}</strong> → Redis list of fact strings · no TTL<br>
+          <strong>rl:{key}</strong> → request count · 1 min window
+        </p>
+      </div>
+
+      <div class="persist-card p-chroma">
+        <div class="persist-glyph">&#128200;</div>
+        <div class="persist-name">ChromaDB Vectors</div>
+        <div class="persist-file" style="color:var(--purple)">chroma/ directory &nbsp;— binary</div>
+        <div class="formats" style="margin-bottom:10px">
+          <span class="ext ext-purple">float32 vectors</span>
+          <span class="ext ext-blue">HNSW index</span>
+          <span class="ext ext-cyan">metadata JSON</span>
+        </div>
+        <p class="persist-desc">
+          Managed by <strong>tools.py</strong> (.py) via <code>chromadb.PersistentClient</code>.
+          Stored in the <code>chroma/</code> directory as binary files.<br><br>
+          Text chunks → <strong>all-MiniLM-L6-v2</strong> SentenceTransformer
+          → 384-dim float32 embedding vectors → HNSW graph index.
+          Metadata stored as JSON alongside each vector.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ─── SECTION: AUTH FLOW ───────────────────── -->
+  <div class="section-gap">
+    <div class="sec-title">Auth Flow &nbsp;(Google OAuth 2.0)</div>
+    <div class="step-card ac-purple" style="border:1px solid var(--border); border-radius:8px; padding:20px 22px; background:var(--surface)">
+      <div class="card-desc" style="margin-bottom:12px">
+        Handled entirely in <strong>main.py</strong> (.py) using <code>authlib</code> + Starlette sessions.
+      </div>
+      <div class="card-detail">
+        <div class="sub-row">
+          <span class="sub-row-label" style="min-width:110px">GET /auth/google</span>
+          <span>Redirect 302 → Google OAuth consent URL (text/html)</span>
+        </div>
+        <div class="sub-row">
+          <span class="sub-row-label" style="min-width:110px">callback params</span>
+          <span>Query string: <code>?code=…&state=…</code> → authlib token exchange → HTTPS/JSON</span>
+        </div>
+        <div class="sub-row">
+          <span class="sub-row-label" style="min-width:110px">userinfo</span>
+          <span>JSON from Google OIDC → Python dict → upserted into SQLite (boozo.db)</span>
+        </div>
+        <div class="sub-row">
+          <span class="sub-row-label" style="min-width:110px">session</span>
+          <span>google_id written to signed cookie — Starlette SessionMiddleware (itsdangerous)</span>
+        </div>
+        <div class="sub-row">
+          <span class="sub-row-label" style="min-width:110px">GET /auth/me</span>
+          <span>Cookie → google_id → SQLite lookup → JSON response</span>
+        </div>
+      </div>
+      <div class="formats" style="margin-top:12px">
+        <span class="ext ext-purple">OIDC / JWT</span>
+        <span class="ext ext-pink">application/json</span>
+        <span class="ext ext-orange">signed cookie</span>
+        <span class="ext ext-cyan">HTTPS/TLS</span>
+        <span class="ext ext-amber">.db SQLite</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ─── FORMAT QUICK REFERENCE ──────────────── -->
+  <div class="section-gap">
+    <div class="sec-title">Format &amp; Extension Quick Reference</div>
+    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:8px;">
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px 14px">
+        <div style="font-size:11px; font-weight:600; color:var(--cyan); margin-bottom:4px">.html / .js</div>
+        <div style="font-size:10px; color:var(--td)">static/index.html — browser UI, event handling, markdown render</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px 14px">
+        <div style="font-size:11px; font-weight:600; color:var(--amber); margin-bottom:4px">.py</div>
+        <div style="font-size:10px; color:var(--td)">main.py · agent.py · tools.py · prompts.py · db.py · cache.py</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px 14px">
+        <div style="font-size:11px; font-weight:600; color:var(--pink); margin-bottom:4px">application/json</div>
+        <div style="font-size:10px; color:var(--td)">HTTP request body, LLM payloads, LLM responses, SSE event content</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px 14px">
+        <div style="font-size:11px; font-weight:600; color:var(--pink); margin-bottom:4px">text/event-stream</div>
+        <div style="font-size:10px; color:var(--td)">StreamingResponse from /chat · Groq streaming response</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px 14px">
+        <div style="font-size:11px; font-weight:600; color:var(--amber); margin-bottom:4px">.db</div>
+        <div style="font-size:10px; color:var(--td)">boozo.db — SQLite binary file, users/sessions/messages</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px 14px">
+        <div style="font-size:11px; font-weight:600; color:var(--purple); margin-bottom:4px">chroma/ (binary)</div>
+        <div style="font-size:10px; color:var(--td)">ChromaDB persistent vector store — float32 embeddings + HNSW</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px 14px">
+        <div style="font-size:11px; font-weight:600; color:var(--orange); margin-bottom:4px">Redis (in-memory)</div>
+        <div style="font-size:10px; color:var(--td)">Key-value store — search cache, URL cache, user memory, rate limits</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px 14px">
+        <div style="font-size:11px; font-weight:600; color:var(--blue); margin-bottom:4px">text/html</div>
+        <div style="font-size:10px; color:var(--td)">DuckDuckGo HTML scraping, rag_ingest URL scraping</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px 14px">
+        <div style="font-size:11px; font-weight:600; color:var(--cyan); margin-bottom:4px">text/plain</div>
+        <div style="font-size:10px; color:var(--td)">Prompts, tool observations, scratchpad, LLM raw output</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px 14px">
+        <div style="font-size:11px; font-weight:600; color:var(--blue); margin-bottom:4px">base64</div>
+        <div style="font-size:10px; color:var(--td)">Image encoding — data:image/{mime};base64,{b64str}</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px 14px">
+        <div style="font-size:11px; font-weight:600; color:var(--orange); margin-bottom:4px">cookie</div>
+        <div style="font-size:10px; color:var(--td)">Starlette signed session cookie — itsdangerous HMAC, 30-day max_age</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px 14px">
+        <div style="font-size:11px; font-weight:600; color:var(--amber); margin-bottom:4px">.env</div>
+        <div style="font-size:10px; color:var(--td)">Environment vars — API keys, SECRET_KEY, loaded by python-dotenv</div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- FOOTER -->
+<footer class="footer">
+  boozo.ai &nbsp;—&nbsp; information signal trace &nbsp;—&nbsp; all formats &amp; extensions documented
+</footer>
+
+<script>
+  // Scroll-reveal for flow steps
+  const steps = document.querySelectorAll('.flow-step');
+  const tools = document.querySelectorAll('.tool-card');
+  const persts = document.querySelectorAll('.persist-card');
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry, _) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('vis');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  // Stagger flow steps
+  steps.forEach((el, i) => {
+    el.style.transitionDelay = `${i * 60}ms`;
+    io.observe(el);
+  });
+
+  // Stagger tool cards
+  tools.forEach((el, i) => {
+    el.style.transitionDelay = `${i * 40}ms`;
+    io.observe(el);
+  });
+
+  // Stagger persist cards
+  persts.forEach((el, i) => {
+    el.style.transitionDelay = `${i * 80}ms`;
+    io.observe(el);
+  });
+</script>
+
+</body>
+</html>

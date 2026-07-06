@@ -32,5 +32,7 @@ build/
 .agents/
 skills-lock.json
 
-# ChromaDB persistent data (if switched to disk-based)
+# Runtime data
+boozo.db
+chroma/
 chroma_data/
