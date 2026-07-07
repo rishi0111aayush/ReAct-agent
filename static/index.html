@@ -7,6 +7,8 @@
   <link rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Orbitron:wght@500;700;900&display=swap');
@@ -108,15 +110,17 @@
     .messages-inner { width:100%; max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:16px; flex:1; }
 
     /* ── BUBBLES ── */
-    .message { max-width:82%; padding:12px 16px; border-radius:3px; line-height:1.78; font-size:0.83rem; font-family:var(--mono); animation:msgIn 0.3s ease; word-break:break-word; position:relative; }
+    .message { max-width:82%; padding:12px 16px; border-radius:3px; line-height:1.78; font-size:0.83rem; font-family:var(--mono); animation:msgIn 0.3s ease; word-break:break-word; position:relative; color:var(--green); }
     @keyframes msgIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
     .message.user {
       align-self:flex-end;
-      background:rgba(0,255,140,0.04); border:1px solid rgba(0,255,140,0.28); border-right:3px solid var(--green);
-      box-shadow:0 0 20px rgba(0,255,140,0.06),inset 0 0 20px rgba(0,255,140,0.02);
+      color:#00ff9d;
+      background:#0d0d0d;
+      border:1px solid rgba(0,255,140,0.35); border-right:3px solid var(--green);
+      box-shadow:0 2px 16px rgba(0,0,0,0.6);
     }
-    .message.user::before { content:'YOU ▶'; display:block; font-size:0.5rem; letter-spacing:2px; color:var(--green); margin-bottom:6px; opacity:0.65; }
-    .message.user:hover { border-color:rgba(0,255,140,0.45); box-shadow:0 0 24px rgba(0,255,140,0.12); }
+    .message.user::before { content:'YOU ▶'; display:block; font-size:0.5rem; letter-spacing:2px; color:var(--green); margin-bottom:6px; opacity:0.75; }
+    .message.user:hover { border-color:rgba(0,255,140,0.60); box-shadow:0 2px 22px rgba(0,255,140,0.15); }
     .message.assistant {
       align-self:flex-start;
       background:rgba(0,212,255,0.03); border:1px solid rgba(0,212,255,0.18); border-left:3px solid var(--cyan);
@@ -124,8 +128,43 @@
     }
     .message.assistant::before { content:'BOOZO.AI ▶'; display:block; font-size:0.5rem; letter-spacing:2px; color:var(--cyan); margin-bottom:6px; opacity:0.65; }
     .message.assistant:hover { box-shadow:0 0 24px rgba(0,212,255,0.08); }
-    .message.assistant pre { margin-top:10px; border-radius:2px; overflow-x:auto; }
+    .message.assistant pre { margin-top:10px; border-radius:2px; overflow-x:auto; position:relative; }
     .message.assistant code:not(pre code) { background:rgba(0,212,255,0.08); color:var(--cyan); padding:2px 6px; border-radius:2px; font-size:0.82em; font-family:var(--mono); }
+    .message.assistant p { margin-bottom:8px; }
+    .message.assistant p:last-child { margin-bottom:0; }
+    .message.assistant ul,.message.assistant ol { padding-left:20px; margin-bottom:8px; }
+    .message.assistant li { margin-bottom:3px; }
+    .message.assistant h1,.message.assistant h2,.message.assistant h3 { color:var(--cyan); margin:10px 0 6px; font-family:var(--display); font-size:0.95rem; }
+    .message.assistant strong { color:var(--text); }
+    .message.assistant blockquote { border-left:3px solid var(--green); padding-left:10px; color:var(--muted); margin:8px 0; font-style:italic; }
+    .message.assistant table { border-collapse:collapse; width:100%; margin:8px 0; font-size:0.8rem; }
+    .message.assistant th,.message.assistant td { border:1px solid rgba(0,255,140,0.15); padding:5px 10px; text-align:left; }
+    .message.assistant th { background:rgba(0,255,140,0.07); color:var(--green); }
+    /* copy button */
+    .copy-btn { position:absolute; top:8px; right:8px; background:rgba(0,212,255,0.1); border:1px solid rgba(0,212,255,0.25); border-radius:3px; color:var(--cyan); font-size:0.6rem; font-family:var(--mono); padding:3px 8px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:all 0.2s; opacity:0; }
+    .message.assistant pre:hover .copy-btn { opacity:1; }
+    .copy-btn:hover { background:rgba(0,212,255,0.22); }
+    .copy-btn.copied { color:var(--green); border-color:rgba(0,255,140,0.35); }
+    /* char counter */
+    .char-counter { font-size:0.55rem; font-family:var(--mono); color:var(--muted); text-align:right; margin-top:2px; transition:color 0.2s; }
+    .char-counter.warn  { color:var(--amber); }
+    .char-counter.limit { color:var(--red); }
+    /* ── MOBILE ── */
+    @media (max-width:768px) {
+      .right-panel { display:none; }
+      .chat-panel { border-right:none; }
+      .input-area { padding:8px 12px 12px; }
+      .input-hint { display:none; }
+      .message { max-width:96%; font-size:0.8rem; }
+      header { padding:0 12px; gap:8px; }
+      .logo { font-size:0.9rem; }
+      .model-select { font-size:0.6rem; max-width:140px; }
+      .hamburger { margin-right:4px; }
+    }
+    @media (max-width:480px) {
+      .model-select { display:none; }
+      #send-btn { padding:10px 14px; font-size:0.65rem; }
+    }
     .chart-card { background:rgba(0,8,16,0.9); border:1px solid rgba(0,255,140,0.12); border-radius:3px; padding:16px; width:100%; max-width:560px; backdrop-filter:blur(12px); }
     .chart-title { font-size:0.6rem; font-weight:700; color:var(--green); margin-bottom:14px; letter-spacing:2px; text-transform:uppercase; font-family:var(--mono); }
     .chart-title::before { content:'// '; opacity:0.5; }
@@ -158,7 +197,7 @@
     .image-error { font-size:0.65rem; color:var(--red); padding:4px 2px; animation:msgIn 0.2s ease; }
     .textarea-wrap { flex:1; position:relative; }
     .textarea-wrap::before { content:'>>'; position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--green); font-family:var(--mono); font-size:0.72rem; pointer-events:none; z-index:1; opacity:0.55; }
-    textarea { width:100%; background:rgba(0,5,10,0.97); border:1px solid rgba(0,255,140,0.14); border-radius:2px; color:var(--text); padding:12px 14px 12px 36px; font-size:0.83rem; font-family:var(--mono); resize:none; min-height:44px; max-height:120px; outline:none; transition:border-color 0.2s,box-shadow 0.2s; }
+    textarea { width:100%; background:rgba(0,5,10,0.97); border:1px solid rgba(0,255,140,0.22); border-radius:2px; color:#e0f0e8; padding:12px 14px 12px 36px; font-size:0.83rem; font-family:var(--mono); resize:none; min-height:44px; max-height:120px; outline:none; transition:border-color 0.2s,box-shadow 0.2s; }
     textarea:focus { border-color:rgba(0,255,140,0.38); box-shadow:0 0 0 1px rgba(0,255,140,0.12),0 0 20px rgba(0,255,140,0.06); }
     textarea::placeholder { color:var(--muted); opacity:0.8; }
     #send-btn { background:transparent; border:1px solid var(--green); border-radius:2px; color:var(--green); font-family:var(--mono); font-weight:700; font-size:0.72rem; padding:12px 20px; cursor:pointer; letter-spacing:2px; text-transform:uppercase; transition:all 0.2s; white-space:nowrap; flex-shrink:0; box-shadow:0 0 10px rgba(0,255,140,0.12),inset 0 0 10px rgba(0,255,140,0.02); }
@@ -252,9 +291,21 @@
     .welcome-center { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:40px 20px; animation:fadeUp 0.7s ease; }
     .welcome-center.hidden { display:none; }
     @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-    .welcome-text-wrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
-    .welcome-name { font-family:var(--display); font-size:1.8rem; font-weight:900; background:linear-gradient(90deg,var(--green),var(--cyan),var(--green)); background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:4px; animation:logoShimmer 4s linear infinite; text-transform:uppercase; }
-    .welcome-tagline { font-size:0.68rem; font-family:var(--mono); color:var(--muted); letter-spacing:3px; text-transform:uppercase; }
+    .welcome-text-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; transform:translateX(-80px) translateY(-40px); }
+    .welcome-name {
+      font-family:var(--display); font-size:2.2rem; font-weight:900;
+      letter-spacing:6px;
+      background:linear-gradient(90deg, var(--green), var(--cyan), var(--green));
+      background-size:200% auto;
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      animation:logoShimmer 4s linear infinite;
+      filter:drop-shadow(0 0 16px rgba(0,255,140,0.7));
+    }
+    .welcome-tagline {
+      font-size:0.72rem; font-family:var(--mono);
+      color:var(--text); letter-spacing:5px; text-transform:uppercase;
+      text-shadow:0 1px 8px rgba(0,0,0,0.9);
+    }
 
     /* ── ANIMATIONS ── */
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
@@ -264,13 +315,222 @@
     ::-webkit-scrollbar-track { background:transparent; }
     ::-webkit-scrollbar-thumb { background:rgba(0,255,140,0.10); border-radius:2px; }
     ::-webkit-scrollbar-thumb:hover { background:rgba(0,255,140,0.22); }
+
+    /* ── HAMBURGER ── */
+    .hamburger {
+      background:none; border:none; cursor:pointer; padding:6px 8px;
+      display:flex; flex-direction:column; gap:5px; z-index:10;
+    }
+    .hamburger span {
+      display:block; width:22px; height:2px;
+      background:var(--green); border-radius:2px;
+      transition:all 0.3s ease;
+    }
+    .hamburger:hover span { background:var(--cyan); }
+
+    /* ── SIDEBAR ── */
+    .sidebar-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.55);
+      backdrop-filter:blur(2px); z-index:200;
+      opacity:0; pointer-events:none; transition:opacity 0.3s ease;
+    }
+    .sidebar-overlay.open { opacity:1; pointer-events:all; }
+
+    .sidebar {
+      position:fixed; top:0; left:0; bottom:0; width:300px;
+      background:rgba(0,5,10,0.97);
+      border-right:1px solid rgba(0,255,140,0.14);
+      backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+      z-index:201; display:flex; flex-direction:column;
+      transform:translateX(-100%); transition:transform 0.32s cubic-bezier(.4,0,.2,1);
+      box-shadow:4px 0 40px rgba(0,0,0,0.7);
+    }
+    .sidebar.open { transform:translateX(0); }
+
+    .sidebar-top {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 20px; border-bottom:1px solid rgba(0,255,140,0.08);
+    }
+    .sidebar-logo {
+      font-family:var(--display); font-size:0.95rem; font-weight:900;
+      letter-spacing:3px;
+      background:linear-gradient(90deg,var(--green),var(--cyan));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .sidebar-close {
+      background:none; border:none; cursor:pointer;
+      color:var(--muted); font-size:1.1rem; line-height:1;
+      transition:color 0.2s;
+    }
+    .sidebar-close:hover { color:var(--green); }
+
+    .user-card {
+      display:flex; align-items:center; gap:12px;
+      padding:16px 20px; border-bottom:1px solid rgba(0,255,140,0.08);
+    }
+    .user-avatar {
+      width:38px; height:38px; border-radius:50%;
+      border:1px solid rgba(0,255,140,0.3); object-fit:cover;
+    }
+    .user-avatar-placeholder {
+      width:38px; height:38px; border-radius:50%;
+      background:rgba(0,255,140,0.08); border:1px solid rgba(0,255,140,0.3);
+      display:flex; align-items:center; justify-content:center;
+      font-family:var(--display); font-size:0.75rem; color:var(--green);
+      flex-shrink:0;
+    }
+    .user-info { flex:1; min-width:0; }
+    .user-name { font-size:0.78rem; color:#fff; font-family:var(--mono); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .user-email { font-size:0.62rem; color:var(--muted); font-family:var(--mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+
+    .new-chat-btn {
+      margin:14px 16px 8px;
+      padding:10px 16px;
+      background:rgba(0,255,140,0.08);
+      border:1px solid rgba(0,255,140,0.35);
+      border-radius:4px; cursor:pointer;
+      color:var(--green); font-family:var(--mono); font-size:0.72rem;
+      letter-spacing:1px; text-align:left;
+      transition:all 0.2s;
+    }
+    .new-chat-btn:hover { background:rgba(0,255,140,0.15); border-color:var(--green); box-shadow:0 0 12px rgba(0,255,140,0.15); }
+
+    .history-label {
+      padding:8px 20px 4px; font-size:0.58rem; letter-spacing:2px;
+      color:var(--muted); text-transform:uppercase; font-family:var(--mono);
+    }
+    .history-list {
+      flex:1; overflow-y:auto; padding:4px 8px;
+    }
+    .history-item {
+      display:flex; align-items:center; gap:8px;
+      padding:9px 12px; border-radius:4px; cursor:pointer;
+      border:1px solid transparent; margin-bottom:3px;
+      transition:all 0.18s;
+    }
+    .history-item:hover { background:rgba(0,255,140,0.06); border-color:rgba(0,255,140,0.15); }
+    .history-item.active { background:rgba(0,255,140,0.10); border-color:rgba(0,255,140,0.35); }
+    .history-item-title {
+      flex:1; font-size:0.72rem; color:var(--text); font-family:var(--mono);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .history-item.active .history-item-title { color:var(--green); }
+    .history-item-del {
+      background:none; border:none; cursor:pointer; color:var(--muted);
+      font-size:0.75rem; padding:2px 4px; border-radius:2px;
+      opacity:0; transition:opacity 0.15s, color 0.15s;
+    }
+    .history-item:hover .history-item-del { opacity:1; }
+    .history-item-del:hover { color:var(--red); }
+    .history-empty { font-size:0.68rem; color:var(--muted); font-family:var(--mono); padding:12px; text-align:center; }
+
+    .sidebar-footer {
+      padding:14px 16px; border-top:1px solid rgba(0,255,140,0.08);
+    }
+    .logout-btn {
+      width:100%; padding:9px 16px;
+      background:none; border:1px solid rgba(255,51,85,0.25);
+      border-radius:4px; cursor:pointer;
+      color:var(--red); font-family:var(--mono); font-size:0.70rem;
+      letter-spacing:1px; transition:all 0.2s;
+    }
+    .logout-btn:hover { background:rgba(255,51,85,0.08); border-color:var(--red); }
+
+    /* ── LOGIN OVERLAY ── */
+    .login-overlay {
+      position:fixed; inset:0; z-index:500;
+      background:rgba(0,0,0,0.88);
+      backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .login-overlay.hidden { display:none; }
+    .login-card {
+      background:rgba(0,6,12,0.97);
+      border:1px solid rgba(0,255,140,0.18);
+      border-radius:8px; padding:48px 52px;
+      display:flex; flex-direction:column; align-items:center; gap:20px;
+      box-shadow:0 0 80px rgba(0,255,140,0.06);
+      min-width:320px;
+    }
+    .login-logo {
+      font-family:var(--display); font-size:1.8rem; font-weight:900;
+      letter-spacing:5px;
+      background:linear-gradient(90deg,var(--green),var(--cyan),var(--green));
+      background-size:200% auto;
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      animation:logoShimmer 4s linear infinite;
+    }
+    .login-sub { font-size:0.72rem; color:var(--muted); font-family:var(--mono); letter-spacing:2px; text-transform:uppercase; }
+    .login-divider { width:100%; height:1px; background:rgba(0,255,140,0.10); }
+    .google-btn {
+      display:flex; align-items:center; gap:12px;
+      padding:12px 24px; border-radius:4px; cursor:pointer; text-decoration:none;
+      background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);
+      color:#fff; font-family:var(--mono); font-size:0.75rem; letter-spacing:1px;
+      transition:all 0.2s; width:100%; justify-content:center;
+    }
+    .google-btn:hover { background:rgba(255,255,255,0.12); border-color:rgba(255,255,255,0.35); }
+    .google-btn svg { flex-shrink:0; }
+    .guest-btn {
+      background:none; border:none; cursor:pointer;
+      color:var(--muted); font-family:var(--mono); font-size:0.65rem;
+      letter-spacing:1px; text-decoration:underline; text-underline-offset:3px;
+      transition:color 0.2s;
+    }
+    .guest-btn:hover { color:var(--text); }
   </style>
 </head>
 <body>
 <canvas id="galaxy-canvas"></canvas>
 
+<!-- ── LOGIN OVERLAY ── -->
+<div class="login-overlay hidden" id="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">Boozo.ai</div>
+    <div class="login-sub">your intelligent tech companion</div>
+    <div class="login-divider"></div>
+    <a class="google-btn" href="/auth/google">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+      Continue with Google
+    </a>
+    <button class="guest-btn" onclick="guestMode()">Continue as guest</button>
+  </div>
+</div>
+
+<!-- ── SIDEBAR ── -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <span class="sidebar-logo">Boozo.ai</span>
+    <button class="sidebar-close" onclick="toggleSidebar()">✕</button>
+  </div>
+
+  <!-- user card -->
+  <div class="user-card" id="sidebar-user" style="display:none">
+    <div class="user-avatar-placeholder" id="user-initials">?</div>
+    <div class="user-info">
+      <div class="user-name" id="sidebar-name">—</div>
+      <div class="user-email" id="sidebar-email">—</div>
+    </div>
+  </div>
+
+  <button class="new-chat-btn" onclick="newChat()">＋ &nbsp;New Chat</button>
+
+  <div class="history-label">Recent Chats</div>
+  <div class="history-list" id="history-list">
+    <div class="history-empty">No history yet</div>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="logout-btn" id="logout-btn" onclick="logout()" style="display:none">Sign Out</button>
+  </div>
+</div>
+
 <header>
   <div class="logo-wrap">
+    <button class="hamburger" onclick="toggleSidebar()" title="Menu">
+      <span></span><span></span><span></span>
+    </button>
     <div class="logo-text">
       <span class="logo">Boozo.ai</span>
     </div>
@@ -334,7 +594,10 @@
           </div>
           <button id="send-btn">Send &#9654;</button>
         </div>
-        <div class="input-hint">Enter to send &nbsp;&middot;&nbsp; Shift+Enter for new line</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="input-hint">Enter to send &nbsp;&middot;&nbsp; Shift+Enter for new line</div>
+          <div class="char-counter" id="char-counter">0 / 4000</div>
+        </div>
       </div>
     </div>
   </div>
@@ -447,7 +710,7 @@ const latencyList    = document.getElementById('latency-list');
 const scratchpadBody = document.getElementById('scratchpad-body');
 const iterDots       = ['id1','id2','id3','id4','id5'].map(id => document.getElementById(id));
 
-let history = [];
+window._chatHistory = [];
 let currentActionStep = null;
 let attachedImage = null;   // { dataUrl, mime, name }
 
@@ -564,19 +827,52 @@ function renderChart(jsonStr) {
   }
 }
 
+// ── Markdown renderer (configured once) ──────────────────────────────────────
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+});
+const _renderer = new marked.Renderer();
+_renderer.code = function(code, lang) {
+  const validLang = lang && hljs.getLanguage(lang);
+  const highlighted = validLang
+    ? hljs.highlight(typeof code === 'object' ? code.text : code, {language: lang}).value
+    : hljs.highlightAuto(typeof code === 'object' ? code.text : code).value;
+  return `<pre><code class="hljs language-${lang || ''}">${highlighted}</code></pre>`;
+};
+marked.use({renderer: _renderer});
+
+function renderMarkdown(text) {
+  return DOMPurify.sanitize(marked.parse(text));
+}
+
+function addCopyButtons(el) {
+  el.querySelectorAll('pre').forEach(pre => {
+    if (pre.querySelector('.copy-btn')) return;
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.addEventListener('click', () => {
+      const code = pre.querySelector('code')?.innerText || '';
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+      });
+    });
+    pre.appendChild(btn);
+  });
+}
+
 function addMessage(role, text) {
   const div = document.createElement('div');
   div.className = `message ${role}`;
-  let html = escapeHtml(text)
-    .replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
-      const hl = lang && hljs.getLanguage(lang)
-        ? hljs.highlight(unescapeHtml(code), {language: lang}).value
-        : hljs.highlightAuto(unescapeHtml(code)).value;
-      return `<pre><code class="hljs">${hl}</code></pre>`;
-    })
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\n/g, '<br>');
-  div.innerHTML = html;
+  if (role === 'assistant' && text) {
+    div.innerHTML = renderMarkdown(text);
+    addCopyButtons(div);
+  } else {
+    div.textContent = text;
+  }
   messagesEl.appendChild(div);
   messagesScroll.scrollTop = messagesScroll.scrollHeight;
   return div;
@@ -682,7 +978,7 @@ async function sendMessage() {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         message: text,
-        history,
+        history: window._chatHistory,
         image: attachedImage?.dataUrl || null,
         image_mime: attachedImage?.mime || null,
         selected_model: document.getElementById('model-select').value,
@@ -725,19 +1021,20 @@ async function sendMessage() {
           renderChart(ev.content);
 
         } else if (ev.type === 'answer_token') {
-          aMsg.textContent += ev.content;
+          aMsg.innerText = (aMsg.innerText || '') + ev.content;
           messagesScroll.scrollTop = messagesScroll.scrollHeight;
 
         } else if (ev.type === 'done') {
           aMsg.innerHTML = '';
           const finalEl = addMessage('assistant', ev.content);
           aMsg.replaceWith(finalEl);
-          history.push({user: text, assistant: ev.content});
+          window._chatHistory.push({user: text, assistant: ev.content});
+          document.dispatchEvent(new CustomEvent('boozo:turn-done', {detail:{userText:text, assistantText:ev.content}}));
           iterDots.forEach((d, i) => { if (i < lastIter) { d.className = 'iter-dot done'; } });
 
         } else if (ev.type === 'error') {
           addBrainStep('error-step', ev.content);
-          aMsg.textContent = 'Something went wrong. Is Ollama running?';
+          aMsg.textContent = `Error: ${ev.content}`;
 
         } else if (ev.type === 'iteration') {
           updateIteration(ev.n, ev.max);
@@ -755,17 +1052,17 @@ async function sendMessage() {
           const badge = document.getElementById('model-badge');
           const [provider, modelName] = ev.content.split(':');
           const isFallback = provider === 'ollama' && document.getElementById('model-select').value.startsWith('groq');
-          if (provider === 'ollama') {
-            badge.textContent = `ollama · ${modelName}${isFallback ? ' (fallback)' : ''}`;
-            badge.style.background = 'rgba(245,158,11,0.15)';
-            badge.style.color = 'var(--amber)';
-            badge.style.borderColor = 'rgba(245,158,11,0.4)';
-          } else {
-            badge.textContent = `groq · ${modelName}`;
-            badge.style.background = 'rgba(0,229,255,0.1)';
-            badge.style.color = 'var(--cyan)';
-            badge.style.borderColor = 'rgba(0,229,255,0.3)';
-          }
+          const styles = {
+            groq:     {bg:'rgba(0,229,255,0.1)',   color:'var(--cyan)',   border:'rgba(0,229,255,0.3)'},
+            cerebras: {bg:'rgba(255,100,50,0.12)',  color:'#ff6432',      border:'rgba(255,100,50,0.35)'},
+            gemini:   {bg:'rgba(66,133,244,0.12)',  color:'#4285f4',      border:'rgba(66,133,244,0.35)'},
+            ollama:   {bg:'rgba(245,158,11,0.15)',  color:'var(--amber)', border:'rgba(245,158,11,0.4)'},
+          };
+          const s = styles[provider] || styles.groq;
+          badge.textContent = `${provider} · ${modelName}${provider !== 'groq' ? ' (fallback)' : ''}`;
+          badge.style.background   = s.bg;
+          badge.style.color        = s.color;
+          badge.style.borderColor  = s.border;
         }
       }
     }
@@ -792,11 +1089,225 @@ inputEl.addEventListener('keydown', e => {
 inputEl.addEventListener('input', () => {
   inputEl.style.height = 'auto';
   inputEl.style.height = Math.min(inputEl.scrollHeight, 110) + 'px';
+  // char counter
+  const len = inputEl.value.length;
+  const counter = document.getElementById('char-counter');
+  if (counter) {
+    counter.textContent = `${len} / 4000`;
+    counter.className = 'char-counter' + (len > 3800 ? ' limit' : len > 3200 ? ' warn' : '');
+  }
+  sendBtn.disabled = len === 0 || len > 4000;
 });
 </script>
 
 <script>
-// ── Spiral Galaxy — image-based, slow rotation ───────────────────────────────
+// ── Auth + Sidebar + History ──────────────────────────────────────────────────
+let currentUser   = null;
+let currentSessId = null;
+let isGuest       = false;
+
+// Sidebar toggle
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+
+// Called on page load
+async function initAuth() {
+  const authError = new URLSearchParams(window.location.search).get('auth_error');
+  if (authError) {
+    history.replaceState({}, '', '/');
+  }
+  try {
+    const res = await fetch('/auth/me');
+    if (res.ok) {
+      currentUser = await res.json();
+      onLoggedIn();
+    } else {
+      showLoginOverlay(authError);
+    }
+  } catch {
+    showLoginOverlay(authError);
+  }
+}
+
+function showLoginOverlay(errorMsg) {
+  document.getElementById('login-overlay').classList.remove('hidden');
+  if (errorMsg) {
+    let errEl = document.getElementById('login-error');
+    if (!errEl) {
+      errEl = document.createElement('div');
+      errEl.id = 'login-error';
+      errEl.style.cssText = 'color:#ff3355;font-size:0.65rem;text-align:center;max-width:260px;line-height:1.5;';
+      document.querySelector('.login-card').appendChild(errEl);
+    }
+    errEl.textContent = 'Login failed: ' + errorMsg;
+  }
+}
+
+function guestMode() {
+  isGuest = true;
+  document.getElementById('login-overlay').classList.add('hidden');
+  // No history for guests
+}
+
+function onLoggedIn() {
+  document.getElementById('login-overlay').classList.add('hidden');
+
+  // Populate sidebar user card
+  document.getElementById('sidebar-user').style.display = 'flex';
+  document.getElementById('logout-btn').style.display   = 'block';
+  document.getElementById('sidebar-name').textContent   = currentUser.name  || 'User';
+  document.getElementById('sidebar-email').textContent  = currentUser.email || '';
+
+  const initials = (currentUser.name || 'U').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  if (currentUser.avatar) {
+    const img = document.createElement('img');
+    img.src = currentUser.avatar;
+    img.className = 'user-avatar';
+    img.alt = currentUser.name;
+    document.getElementById('user-initials').replaceWith(img);
+  } else {
+    document.getElementById('user-initials').textContent = initials;
+  }
+
+  loadHistory();
+  startNewSession();
+}
+
+async function logout() {
+  await fetch('/auth/logout', {method:'POST'});
+  location.reload();
+}
+
+// History
+async function loadHistory() {
+  if (!currentUser) return;
+  const res = await fetch('/api/sessions');
+  if (!res.ok) return;
+  const sessions = await res.json();
+  renderHistory(sessions);
+}
+
+function renderHistory(sessions) {
+  const list = document.getElementById('history-list');
+  if (!sessions.length) {
+    list.innerHTML = '<div class="history-empty">No history yet</div>';
+    return;
+  }
+  list.innerHTML = '';
+  sessions.forEach(s => {
+    const item = document.createElement('div');
+    item.className = 'history-item' + (s.id === currentSessId ? ' active' : '');
+    item.dataset.id = s.id;
+
+    const title = document.createElement('span');
+    title.className = 'history-item-title';
+    title.textContent = s.title;
+    title.title = s.title;
+
+    const del = document.createElement('button');
+    del.className = 'history-item-del';
+    del.textContent = '✕';
+    del.title = 'Delete';
+    del.onclick = async e => {
+      e.stopPropagation();
+      await fetch(`/api/sessions/${s.id}`, {method:'DELETE'});
+      if (s.id === currentSessId) newChat();
+      loadHistory();
+    };
+
+    item.appendChild(title);
+    item.appendChild(del);
+    item.onclick = () => loadSession(s.id, s.title);
+    list.appendChild(item);
+  });
+}
+
+async function startNewSession() {
+  if (!currentUser) return;
+  const res = await fetch('/api/sessions', {method:'POST'});
+  if (!res.ok) return;
+  const sess = await res.json();
+  currentSessId = sess.id;
+}
+
+async function loadSession(sessId, title) {
+  const res = await fetch(`/api/sessions/${sessId}`);
+  if (!res.ok) return;
+  const data = await res.json();
+
+  // Clear current chat
+  const inner = document.getElementById('messages-inner');
+  inner.innerHTML = '';
+  window._chatHistory = [];
+
+  // Rebuild messages
+  let lastUser = null;
+  data.messages.forEach(m => {
+    if (m.role === 'user') {
+      lastUser = m.content;
+      addMessage('user', m.content);
+    } else {
+      addMessage('assistant', m.content);
+      if (lastUser) window._chatHistory.push({user: lastUser, assistant: m.content});
+    }
+  });
+
+  currentSessId = sessId;
+  toggleSidebar();
+
+  // Mark active in list
+  document.querySelectorAll('.history-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === sessId);
+  });
+}
+
+function newChat() {
+  const inner = document.getElementById('messages-inner');
+  inner.innerHTML = '';
+
+  // Re-add welcome screen
+  const wc = document.createElement('div');
+  wc.className = 'welcome-center';
+  wc.id = 'welcome-center';
+  wc.innerHTML = `
+    <div class="welcome-text-wrap">
+      <span class="welcome-name">Boozo.ai</span>
+      <span class="welcome-tagline">your intelligent tech companion</span>
+    </div>`;
+  inner.appendChild(wc);
+
+  window._chatHistory = [];
+  currentSessId = null;
+  startNewSession();
+  loadHistory();
+  toggleSidebar();
+}
+
+// Save messages to backend when a turn completes
+async function saveMessage(role, content) {
+  if (!currentUser || !currentSessId) return;
+  await fetch(`/api/sessions/${currentSessId}/message`, {
+    method : 'POST',
+    headers: {'Content-Type':'application/json'},
+    body   : JSON.stringify({role, content}),
+  });
+  loadHistory(); // refresh titles
+}
+
+// Save turns to backend when a turn completes
+document.addEventListener('boozo:turn-done', async e => {
+  const {userText, assistantText} = e.detail;
+  await saveMessage('user', userText);
+  await saveMessage('assistant', assistantText);
+});
+
+initAuth();
+</script>
+
+<script>
+// ── Spiral Galaxy — image-based, fan rotation, no rectangle edges ─────────────
 (function() {
   const canvas = document.getElementById('galaxy-canvas');
   const ctx    = canvas.getContext('2d');
@@ -817,22 +1328,35 @@ inputEl.addEventListener('input', () => {
     ctx.fillRect(0, 0, W, H);
     if (!img.complete || !img.naturalWidth) return;
 
-    const size = Math.min(W, H) * 0.85;
-    const rot  = ts * 0.000040;
+    const rot   = ts * 0.000035;
 
-    // Draw image larger than viewport so rectangle edges stay off-screen
+    // Image aspect ratio: ~904×543 → 1.665:1 (landscape)
+    // Galaxy core in the jpg sits at 54.2% from left, 56.2% from top.
+    // We size by height so drawH > 2×clipR, ensuring image edges never enter the clip circle.
+    const drawH = Math.min(W, H) * 1.10;
+    const drawW = drawH * (img.naturalWidth / img.naturalHeight); // 1.665 × drawH
+
+    // clipR must be < (1 - 0.562) × drawH = 0.438 × drawH (distance from core to bottom edge).
+    // Using 0.41 × drawH gives a safe margin while showing the full inner galaxy structure.
+    const clipR = drawH * 0.41;
+
     ctx.save();
     ctx.translate(W * 0.5, H * 0.5);
     ctx.rotate(rot);
-    ctx.rotate(Math.PI * 0.5);
-    ctx.drawImage(img, -size * 0.90, -size * 0.62, size * 1.80, size * 1.24);
+
+    // Circular clip — no rectangle edge or watermark can ever appear
+    ctx.beginPath();
+    ctx.arc(0, 0, clipR, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Offset so galaxy core (54.2% x, 56.2% y of image) lands on the rotation pivot
+    ctx.drawImage(img, -drawW * 0.542, -drawH * 0.562, drawW, drawH);
     ctx.restore();
 
-    // Smooth vignette — black radial gradient fades edges to nothing, no hard line
-    const vg = ctx.createRadialGradient(W*0.5, H*0.5, size*0.28, W*0.5, H*0.5, size*0.62);
-    vg.addColorStop(0,   'rgba(0,0,0,0)');
-    vg.addColorStop(0.7, 'rgba(0,0,0,0)');
-    vg.addColorStop(1,   'rgba(0,0,0,1)');
+    // Soft vignette fades the outer arms naturally into black space
+    const vg = ctx.createRadialGradient(W*0.5, H*0.5, clipR * 0.58, W*0.5, H*0.5, clipR);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,1)');
     ctx.fillStyle = vg;
     ctx.fillRect(0, 0, W, H);
   }

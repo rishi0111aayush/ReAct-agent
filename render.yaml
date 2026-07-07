@@ -4,6 +4,10 @@ services:
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn main:app --host 0.0.0.0 --port $PORT
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: GROQ_API_KEY
         sync: false
@@ -11,3 +15,23 @@ services:
         sync: false
       - key: CEREBRAS_API_KEY
         sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: DATA_DIR
+        value: /data
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: boozo-redis
+          property: connectionString
+      - key: RATE_LIMIT_RPM
+        value: "30"
+
+  - type: redis
+    name: boozo-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru

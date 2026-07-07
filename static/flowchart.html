@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How Boozo.ai Works — Simple Guide</title>
+  <title>How Boozo.ai Works — Architecture Guide</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -40,21 +40,34 @@
     .subtitle {
       text-align: center;
       color: var(--muted);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+    .version-badge {
+      display: flex;
+      justify-content: center;
       margin-bottom: 48px;
     }
+    .version-badge span {
+      background: rgba(0,229,255,0.08);
+      border: 1px solid rgba(0,229,255,0.2);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.72rem;
+      color: var(--cyan);
+      letter-spacing: 0.08em;
+    }
 
-    /* ── Flow container ─────────────────────────────── */
+    /* ── Flow ───────────────────────────────────────── */
     .flow {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0;
-      max-width: 680px;
+      max-width: 740px;
       margin: 0 auto;
     }
 
-    /* ── Each step card ─────────────────────────────── */
+    /* ── Step card ───────────────────────────────────── */
     .step {
       width: 100%;
       background: var(--surface);
@@ -65,262 +78,269 @@
       align-items: flex-start;
       gap: 18px;
       opacity: 0;
-      transform: translateY(30px);
+      transform: translateY(28px);
       transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.3s;
       cursor: default;
+      position: relative;
     }
     .step:hover { border-color: var(--cyan); }
     .step.visible { opacity: 1; transform: translateY(0); }
 
     .step-icon {
-      font-size: 2rem;
+      font-size: 1.7rem;
       flex-shrink: 0;
-      width: 52px;
-      height: 52px;
+      width: 48px; height: 48px;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
     }
-    .step-body { flex: 1; }
-    .step-num {
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 2px;
-    }
-    .step-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .step-desc {
-      font-size: 0.88rem;
-      color: #94a3b8;
-      line-height: 1.55;
-    }
+    .step-body { flex: 1; min-width: 0; }
+    .step-num  { font-size: 0.67rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+    .step-title { font-size: 1rem; font-weight: 700; margin-bottom: 5px; }
+    .step-desc  { font-size: 0.86rem; color: #94a3b8; line-height: 1.65; }
     .step-desc b { color: var(--text); }
 
-    /* Colour themes per step */
-    .s1 .step-icon { background: rgba(0,229,255,0.12); }
-    .s1 .step-title { color: var(--cyan); }
-    .s2 .step-icon { background: rgba(124,58,237,0.15); }
-    .s2 .step-title { color: #a78bfa; }
-    .s3 .step-icon { background: rgba(224,64,251,0.12); }
-    .s3 .step-title { color: var(--pink); }
-    .s4 .step-icon { background: rgba(245,158,11,0.12); }
-    .s4 .step-title { color: var(--amber); }
-    .s5 .step-icon { background: rgba(16,185,129,0.12); }
-    .s5 .step-title { color: var(--green); }
-    .s6 .step-icon { background: rgba(239,68,68,0.12); }
-    .s6 .step-title { color: #f87171; }
-    .s7 .step-icon { background: rgba(0,229,255,0.12); }
-    .s7 .step-title { color: var(--cyan); }
-    .s8 .step-icon { background: rgba(16,185,129,0.12); }
-    .s8 .step-title { color: var(--green); }
+    .s1  .step-icon { background: rgba(0,229,255,0.12);   } .s1  .step-title { color: var(--cyan);   }
+    .s2  .step-icon { background: rgba(124,58,237,0.15);  } .s2  .step-title { color: #a78bfa;       }
+    .s3  .step-icon { background: rgba(220,38,38,0.14);   } .s3  .step-title { color: #fca5a5;       }
+    .s4  .step-icon { background: rgba(245,158,11,0.12);  } .s4  .step-title { color: var(--amber);  }
+    .s5  .step-icon { background: rgba(224,64,251,0.12);  } .s5  .step-title { color: var(--pink);   }
+    .s6  .step-icon { background: rgba(245,158,11,0.12);  } .s6  .step-title { color: var(--amber);  }
+    .s7  .step-icon { background: rgba(16,185,129,0.12);  } .s7  .step-title { color: var(--green);  }
+    .s8  .step-icon { background: rgba(0,229,255,0.12);   } .s8  .step-title { color: var(--cyan);   }
+    .s9  .step-icon { background: rgba(220,38,38,0.12);   } .s9  .step-title { color: #fca5a5;       }
+    .s10 .step-icon { background: rgba(16,185,129,0.12);  } .s10 .step-title { color: var(--green);  }
+    .s11 .step-icon { background: rgba(0,229,255,0.12);   } .s11 .step-title { color: var(--cyan);   }
+    .s12 .step-icon { background: rgba(16,185,129,0.12);  } .s12 .step-title { color: var(--green);  }
 
-    /* ── Arrow between steps ────────────────────────── */
+    /* badges */
+    .badge {
+      position: absolute; top: 12px; right: 14px;
+      border-radius: 6px; padding: 3px 9px;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;
+    }
+    .badge.redis  { background: rgba(220,38,38,0.15); border: 1px solid rgba(220,38,38,0.4);  color: #fca5a5; }
+    .badge.new    { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
+    .badge.stream { background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.35); color: #c4b5fd; }
+
+    /* ── Arrow ──────────────────────────────────────── */
     .arrow {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0;
-      padding: 4px 0;
-      opacity: 0;
-      transition: opacity 0.4s ease;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 4px 0; opacity: 0; transition: opacity 0.4s ease;
     }
     .arrow.visible { opacity: 1; }
-    .arrow-line {
-      width: 2px;
-      height: 28px;
-      background: linear-gradient(to bottom, var(--border), var(--cyan));
-    }
-    .arrow-head {
-      width: 0; height: 0;
-      border-left: 7px solid transparent;
-      border-right: 7px solid transparent;
-      border-top: 10px solid var(--cyan);
-    }
+    .arrow-line { width: 2px; height: 26px; background: linear-gradient(to bottom, var(--border), var(--cyan)); }
+    .arrow-head { width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 10px solid var(--cyan); }
 
     /* ── Decision diamond ───────────────────────────── */
     .diamond-wrapper {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      opacity: 0;
-      transform: translateY(20px);
+      width: 100%; display: flex; justify-content: center;
+      opacity: 0; transform: translateY(20px);
       transition: opacity 0.5s ease, transform 0.5s ease;
     }
     .diamond-wrapper.visible { opacity: 1; transform: translateY(0); }
+    .diamond-wrapper .dlabel { text-align: center; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
 
     .diamond {
-      background: rgba(245,158,11,0.1);
-      border: 2px solid var(--amber);
-      border-radius: 8px;
-      transform: rotate(45deg);
-      width: 120px;
-      height: 120px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
+      border-radius: 8px; transform: rotate(45deg);
+      width: 108px; height: 108px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .diamond-inner {
-      transform: rotate(-45deg);
-      text-align: center;
-      padding: 8px;
-    }
-    .diamond-inner .emoji { font-size: 1.6rem; display: block; }
-    .diamond-inner span { font-size: 0.7rem; font-weight: 700; color: var(--amber); letter-spacing: 0.05em; }
+    .diamond.amber { background: rgba(245,158,11,0.10); border: 2px solid var(--amber); }
+    .diamond.redis { background: rgba(220,38,38,0.10); border: 2px solid #ef4444; }
+    .diamond.green { background: rgba(16,185,129,0.10); border: 2px solid var(--green); }
 
+    .diamond-inner { transform: rotate(-45deg); text-align: center; padding: 8px; }
+    .diamond-inner .emoji { font-size: 1.4rem; display: block; }
+    .diamond-inner span  { font-size: 0.67rem; font-weight: 700; letter-spacing: 0.04em; }
+    .diamond.amber .diamond-inner span { color: var(--amber); }
+    .diamond.redis .diamond-inner span { color: #fca5a5; }
+    .diamond.green .diamond-inner span { color: var(--green); }
+
+    /* ── Branch row ─────────────────────────────────── */
     .branch-row {
-      display: flex;
-      width: 100%;
-      align-items: flex-start;
-      justify-content: center;
-      gap: 16px;
-      opacity: 0;
-      transition: opacity 0.5s ease 0.2s;
+      display: flex; width: 100%;
+      align-items: flex-start; justify-content: center;
+      gap: 12px; opacity: 0; transition: opacity 0.5s ease 0.2s;
     }
     .branch-row.visible { opacity: 1; }
 
     .branch {
-      flex: 1;
-      max-width: 300px;
-      background: var(--surface);
-      border-radius: 14px;
-      padding: 16px 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      flex: 1; max-width: 340px;
+      background: var(--surface); border-radius: 14px;
+      padding: 16px 18px; display: flex; flex-direction: column; gap: 7px;
     }
-    .branch.yes { border: 2px solid rgba(16,185,129,0.5); }
-    .branch.no  { border: 2px solid rgba(239,68,68,0.5); }
-    .branch-label {
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-    .branch.yes .branch-label { color: var(--green); }
-    .branch.no  .branch-label { color: #f87171; }
-    .branch-title { font-size: 0.92rem; font-weight: 700; color: var(--text); }
-    .branch-desc  { font-size: 0.82rem; color: #94a3b8; line-height: 1.5; }
+    .branch.yes  { border: 2px solid rgba(16,185,129,0.45); }
+    .branch.no   { border: 2px solid rgba(100,116,139,0.35); }
+    .branch.hit  { border: 2px solid rgba(220,38,38,0.45);  }
+    .branch.miss { border: 2px solid rgba(100,116,139,0.35); }
 
-    /* ── Provider fallback boxes ─────────────────────── */
+    .branch-label { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+    .branch.yes  .branch-label { color: var(--green); }
+    .branch.no   .branch-label { color: var(--muted); }
+    .branch.hit  .branch-label { color: #fca5a5; }
+    .branch.miss .branch-label { color: var(--muted); }
+
+    .branch-title { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+    .branch-desc  { font-size: 0.81rem; color: #94a3b8; line-height: 1.55; }
+
+    /* ── Provider row ───────────────────────────────── */
     .providers {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-      width: 100%;
-      opacity: 0;
-      transform: translateY(20px);
+      display: flex; gap: 8px; flex-wrap: wrap;
+      justify-content: center; width: 100%;
+      opacity: 0; transform: translateY(20px);
       transition: opacity 0.5s ease, transform 0.5s ease;
     }
     .providers.visible { opacity: 1; transform: translateY(0); }
     .provider {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 16px;
-      text-align: center;
-      font-size: 0.82rem;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 10px 14px; text-align: center; font-size: 0.8rem;
     }
     .provider .p-emoji { font-size: 1.2rem; display: block; margin-bottom: 3px; }
     .provider .p-name  { font-weight: 700; color: var(--cyan); }
-    .provider .p-sub   { color: var(--muted); font-size: 0.73rem; }
-    .provider-arrow {
-      font-size: 1.1rem;
-      color: var(--muted);
-      align-self: center;
+    .provider .p-sub   { color: var(--muted); font-size: 0.71rem; }
+    .provider-arrow    { font-size: 1.1rem; color: var(--muted); align-self: center; }
+
+    /* ── Tag chips ──────────────────────────────────── */
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 20px;
+      font-size: 0.74rem; font-weight: 600; font-family: monospace;
     }
+    .tag.cyan   { background: rgba(0,229,255,0.08);  border: 1px solid rgba(0,229,255,0.25);  color: var(--cyan);  }
+    .tag.green  { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); color: #6ee7b7;      }
+    .tag.amber  { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); color: var(--amber); }
+    .tag.pink   { background: rgba(224,64,251,0.08); border: 1px solid rgba(224,64,251,0.25); color: var(--pink);  }
+    .tag.purple { background: rgba(124,58,237,0.10); border: 1px solid rgba(124,58,237,0.3);  color: #c4b5fd;      }
+    .tag.redis  { background: rgba(220,38,38,0.10);  border: 1px solid rgba(220,38,38,0.3);   color: #fca5a5;      }
+    .tag.new    { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.35); color: #6ee7b7;      font-weight:800; }
 
     /* ── Legend ─────────────────────────────────────── */
     .legend {
-      max-width: 680px;
-      margin: 48px auto 0;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px 24px;
-      opacity: 0;
-      transform: translateY(20px);
+      max-width: 740px; margin: 48px auto 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px;
+      opacity: 0; transform: translateY(20px);
       transition: opacity 0.5s ease, transform 0.5s ease;
     }
     .legend.visible { opacity: 1; transform: translateY(0); }
-    .legend h2 { font-size: 1rem; color: var(--cyan); margin-bottom: 14px; }
-    .legend-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 10px;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.83rem;
-    }
-    .legend-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+    .legend h2 { font-size: 1rem; color: var(--cyan); margin-bottom: 16px; }
+    .legend-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .legend-item { display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; line-height: 1.5; }
+    .legend-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
   </style>
 </head>
 <body>
 
   <h1>🤖 How Boozo.ai Works</h1>
-  <p class="subtitle">A simple step-by-step guide — explained like you're in class 7!</p>
+  <p class="subtitle">Complete architecture — every layer from your question to the answer</p>
+  <div class="version-badge"><span>v3 · Redis + Streaming + Markdown + 11 Tools</span></div>
 
   <div class="flow" id="flow">
 
-    <!-- Step 1 -->
+    <!-- ── 1. User types ─────────────────────────────── -->
     <div class="step s1">
       <div class="step-icon">💬</div>
       <div class="step-body">
         <div class="step-num">Step 1</div>
         <div class="step-title">You Type a Question</div>
-        <div class="step-desc">You open the chat and type something like <b>"What is Python?"</b> or <b>"Show me a chart of top languages"</b>. You press Enter. That's where the magic starts!</div>
+        <div class="step-desc">Open the chat at <b>localhost:8080</b> and type your question. A live <b>char counter</b> tracks your input (max 4000 chars). You can also attach a <b>PNG / JPG image</b> for vision questions, or switch the AI model from the dropdown. Press Enter to send.</div>
+        <div class="tags">
+          <span class="tag cyan">Enter to send</span>
+          <span class="tag amber">Max 4 000 chars</span>
+          <span class="tag new">NEW: char counter</span>
+          <span class="tag cyan">Image upload</span>
+          <span class="tag cyan">Model switcher</span>
+        </div>
       </div>
     </div>
 
     <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
 
-    <!-- Step 2 -->
+    <!-- ── 2. Google OAuth ───────────────────────────── -->
     <div class="step s2">
-      <div class="step-icon">📦</div>
+      <div class="step-icon">🔐</div>
       <div class="step-body">
         <div class="step-num">Step 2</div>
-        <div class="step-title">Browser Sends Your Message to the Server</div>
-        <div class="step-desc">Your browser (Chrome, Edge etc.) packages your message and sends it over the internet to our <b>FastAPI server</b> running on your computer at <b>localhost:8000</b>. Think of it like sending a letter to a post office.</div>
+        <div class="step-title">Google OAuth — Identity Check</div>
+        <div class="step-desc">The server checks who you are via <b>Google OAuth 2.0</b>. Logged-in users get <b>per-user chat history</b> (SQLite), <b>session naming</b>, and access to the <b>remember / recall</b> memory tools. Guests can still chat — history and persistent memory are just disabled.</div>
+        <div class="tags">
+          <span class="tag purple">authlib + itsdangerous</span>
+          <span class="tag green">Session cookie</span>
+          <span class="tag cyan">Guest mode</span>
+        </div>
       </div>
     </div>
 
     <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
 
-    <!-- Step 3 -->
+    <!-- ── 3. Input validation ───────────────────────── -->
     <div class="step s3">
-      <div class="step-icon">🧠</div>
+      <div class="step-icon">🛡️</div>
       <div class="step-body">
         <div class="step-num">Step 3</div>
-        <div class="step-title">The Agent Starts Thinking (ReAct Loop)</div>
-        <div class="step-desc">The server hands your question to <b>Boozo.ai's brain</b> — the ReAct agent. <b>ReAct</b> stands for <b>Reason + Act</b>. It means: first <b>think</b>, then <b>do something</b>, then <b>think again</b>. Like how you solve a maths problem step by step.</div>
+        <div class="step-title">Input Validation + Rate Limiting</div>
+        <div class="step-desc">FastAPI checks that the message is <b>not empty</b> and <b>under 4 000 characters</b> — otherwise it returns a 400 error. Then Redis checks your request count: if you exceed <b>30 requests per minute</b>, a 429 is returned. This protects API quotas from being drained.</div>
+        <div class="tags">
+          <span class="tag amber">400 if empty / too long</span>
+          <span class="tag redis">Redis INCR + EXPIRE</span>
+          <span class="tag amber">30 req / min</span>
+          <span class="tag new">NEW: input limit</span>
+        </div>
+      </div>
+      <div class="badge redis">Redis</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- ── 4. FastAPI receives ───────────────────────── -->
+    <div class="step s4">
+      <div class="step-icon">📦</div>
+      <div class="step-body">
+        <div class="step-num">Step 4</div>
+        <div class="step-title">FastAPI /chat — SSE Stream Begins</div>
+        <div class="step-desc">Your message, conversation history, selected model, and user ID are packaged and passed to the <b>ReAct agent</b>. The response is a live <b>SSE (Server-Sent Events)</b> stream — events flow back in real time as the agent thinks, calls tools, and generates its answer.</div>
+        <div class="tags">
+          <span class="tag cyan">POST /chat</span>
+          <span class="tag purple">StreamingResponse</span>
+          <span class="tag amber">SSE text/event-stream</span>
+        </div>
       </div>
     </div>
 
     <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
 
-    <!-- Step 4 — LLM providers -->
-    <div class="step s4">
+    <!-- ── 5. ReAct loop ─────────────────────────────── -->
+    <div class="step s5">
+      <div class="step-icon">🧠</div>
+      <div class="step-body">
+        <div class="step-num">Step 5</div>
+        <div class="step-title">ReAct Agent Loop (up to 5 iterations)</div>
+        <div class="step-desc">The <b>ReAct (Reason + Act)</b> loop starts. Each iteration: build a prompt from your question + conversation history + scratchpad → call an LLM → parse the response → either dispatch a tool or give a Final Answer. The right panel shows thoughts, actions, and observations live.</div>
+        <div class="tags">
+          <span class="tag pink">Thought → Action → Observation</span>
+          <span class="tag amber">Max 5 iterations</span>
+          <span class="tag cyan">Live scratchpad</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- ── 6. LLM with streaming ─────────────────────── -->
+    <div class="step s6">
       <div class="step-icon">⚡</div>
       <div class="step-body">
-        <div class="step-num">Step 4</div>
-        <div class="step-title">It Asks a Giant AI Brain (LLM)</div>
-        <div class="step-desc">The agent sends your question to a <b>Large Language Model (LLM)</b> — a super-smart AI trained on millions of books and websites. We try them in order until one works:</div>
+        <div class="step-num">Step 6</div>
+        <div class="step-title">LLM Call — Real-Time Token Streaming</div>
+        <div class="step-desc">When using Groq, the agent now uses <b>true SSE token streaming</b> — as soon as the LLM starts generating the Final Answer, tokens flow directly to your browser. No waiting for the full response. Other providers (Cerebras, Gemini, Ollama) still use non-streaming and fall back gracefully.</div>
+        <div class="tags">
+          <span class="tag purple">new: call_groq_stream()</span>
+          <span class="tag new">NEW: real-time streaming</span>
+          <span class="tag amber">Detects "Final Answer:" prefix</span>
+        </div>
       </div>
+      <div class="badge stream">Streaming</div>
     </div>
 
     <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
@@ -329,7 +349,7 @@
       <div class="provider">
         <span class="p-emoji">⚡</span>
         <div class="p-name">Groq</div>
-        <div class="p-sub">Try first — fastest</div>
+        <div class="p-sub">First — streaming</div>
       </div>
       <div class="provider-arrow">→</div>
       <div class="provider">
@@ -347,32 +367,20 @@
       <div class="provider">
         <span class="p-emoji">🖥</span>
         <div class="p-name">Ollama</div>
-        <div class="p-sub">Last resort (local)</div>
+        <div class="p-sub">Local fallback</div>
       </div>
     </div>
 
     <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
 
-    <!-- Step 5 — Decision -->
-    <div class="step s5">
-      <div class="step-icon">📋</div>
-      <div class="step-body">
-        <div class="step-num">Step 5</div>
-        <div class="step-title">The LLM Reads and Plans</div>
-        <div class="step-desc">The LLM reads your question plus a <b>special instruction</b> that says: "Think step by step. If you need more info, use a tool. Otherwise, give the final answer." It writes back a <b>Thought</b> (what it plans to do).</div>
-      </div>
-    </div>
-
-    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
-
-    <!-- Decision diamond -->
+    <!-- ── Decision: needs tool? ──────────────────────── -->
     <div class="diamond-wrapper">
       <div>
-        <div style="text-align:center; font-size:0.8rem; color:var(--amber); font-weight:700; margin-bottom:8px;">DECISION</div>
-        <div class="diamond">
+        <div class="dlabel" style="color:var(--amber)">Decision</div>
+        <div class="diamond amber">
           <div class="diamond-inner">
             <span class="emoji">🤔</span>
-            <span>Does it need<br>a TOOL?</span>
+            <span>Needs a<br>TOOL?</span>
           </div>
         </div>
       </div>
@@ -380,94 +388,171 @@
 
     <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
 
-    <!-- Branch YES / NO -->
+    <!-- ── Branch: tools / final answer ──────────────── -->
     <div class="branch-row">
       <div class="branch yes">
-        <div class="branch-label">✅ YES — Use a Tool</div>
-        <div class="branch-title">Runs a Tool</div>
-        <div class="branch-desc">
-          The agent picks one of its tools:<br><br>
-          🔍 <b>web_search</b> — searches DuckDuckGo<br>
-          💻 <b>code_exec</b> — runs Python code<br>
-          🧮 <b>calculator</b> — does maths<br>
-          📥 <b>rag_ingest</b> — stores a document<br>
-          🔎 <b>rag_search</b> — finds stored info<br>
-          📊 <b>plot</b> — draws a chart<br><br>
-          The tool runs and sends back an <b>Observation</b> (the result). Then the loop goes back to Step 3 and thinks again!
+        <div class="branch-label">✅ Yes — Dispatch Tool</div>
+        <div class="branch-title">11 Tools Available</div>
+        <div class="branch-desc">Agent picks one, runs it, gets an Observation, then loops back to Step 5.</div>
+        <div class="tags" style="margin-top:8px;">
+          <span class="tag cyan">🔍 web_search</span>
+          <span class="tag cyan">💻 code_exec</span>
+          <span class="tag cyan">🧮 calculator</span>
+          <span class="tag green">📥 rag_ingest</span>
+          <span class="tag green">🔎 rag_search</span>
+          <span class="tag amber">📊 plot</span>
+          <span class="tag redis">🧠 remember</span>
+          <span class="tag redis">💭 recall</span>
+          <span class="tag new">🕐 datetime_now</span>
+          <span class="tag new">📖 wikipedia_search</span>
+          <span class="tag new">🌤 get_weather</span>
         </div>
       </div>
       <div class="branch no">
-        <div class="branch-label">🏁 NO — Ready to Answer</div>
-        <div class="branch-title">Writes Final Answer</div>
-        <div class="branch-desc">
-          The agent has enough info to answer you directly. It writes <b>"Final Answer: …"</b> and stops the loop.<br><br>
-          The answer is streamed back to your screen <b>one letter at a time</b> — that's why it appears like it's typing!
+        <div class="branch-label">🏁 No — Final Answer</div>
+        <div class="branch-title">Streams Answer Live</div>
+        <div class="branch-desc">Agent writes "Final Answer: …". With Groq, tokens stream to the browser in real time as they're generated. Other providers send char-by-char after completion.</div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- ── 7. Redis cache check ───────────────────────── -->
+    <div class="diamond-wrapper">
+      <div>
+        <div class="dlabel" style="color:#fca5a5">Redis Cache (tools)</div>
+        <div class="diamond redis">
+          <div class="diamond-inner">
+            <span class="emoji">⚡</span>
+            <span>Already<br>cached?</span>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
 
-    <!-- Step 6 -->
-    <div class="step s6">
+    <div class="branch-row">
+      <div class="branch hit">
+        <div class="branch-label">⚡ Cache Hit — Instant</div>
+        <div class="branch-title">Served from Redis</div>
+        <div class="branch-desc">
+          <b>web_search</b> — same query? Result from Redis in &lt;5ms, no DuckDuckGo call.<br><br>
+          <b>rag_ingest URL</b> — same URL? Page text from Redis, no re-scraping.<br><br>
+          TTL: search = 1 h &nbsp;·&nbsp; URL = 24 h
+        </div>
+      </div>
+      <div class="branch miss">
+        <div class="branch-label">🔄 Cache Miss — Fetch Live</div>
+        <div class="branch-title">Fetch + Store</div>
+        <div class="branch-desc">First time this query or URL is seen — fetches live, stores result in Redis. Every future call is a cache hit.</div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- ── 8. SSE stream to browser ──────────────────── -->
+    <div class="step s8">
       <div class="step-icon">📡</div>
       <div class="step-body">
-        <div class="step-num">Step 6</div>
-        <div class="step-title">Answer Streams Back to Your Screen</div>
-        <div class="step-desc">The server sends the answer back using <b>SSE (Server-Sent Events)</b>. Think of it like a live TV broadcast — data flows continuously from the server to your browser. That's why you see the text appearing letter by letter instead of all at once.</div>
+        <div class="step-num">Step 8</div>
+        <div class="step-title">Answer Streams to Browser via SSE</div>
+        <div class="step-desc">Each event — <b>thought</b>, <b>action</b>, <b>observation</b>, <b>answer_token</b>, <b>timing</b> — arrives as a separate SSE message. The right panel updates live with the scratchpad, latency bars, model badge, and iteration dots. With Groq, the first word of the answer can appear in under 300ms.</div>
       </div>
     </div>
 
     <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
 
-    <!-- Step 7 -->
-    <div class="step s7">
-      <div class="step-icon">🖥️</div>
+    <!-- ── 9. Markdown render ─────────────────────────── -->
+    <div class="step s9">
+      <div class="step-icon">✨</div>
       <div class="step-body">
-        <div class="step-num">Step 7</div>
-        <div class="step-title">Right Panel Updates Live</div>
-        <div class="step-desc">While you wait, the <b>right panel</b> shows you everything happening behind the scenes: the agent's <b>thoughts</b>, which <b>tools</b> it used, how long each step took (<b>latency</b>), and how much of the context window was used. It's like watching the agent's brain through a glass window!</div>
+        <div class="step-num">Step 9</div>
+        <div class="step-title">Markdown Rendering + Syntax Highlighting</div>
+        <div class="step-desc">Once the <b>done</b> event arrives, the raw answer text is passed through <b>marked.js</b> for full Markdown rendering — bold, headers, lists, tables, blockquotes. Code blocks are syntax-highlighted by <b>highlight.js</b>. Output is sanitised by <b>DOMPurify</b> before being inserted into the DOM. Every code block gets a <b>Copy button</b>.</div>
+        <div class="tags">
+          <span class="tag new">NEW: marked.js</span>
+          <span class="tag new">NEW: DOMPurify</span>
+          <span class="tag new">NEW: Copy button</span>
+          <span class="tag cyan">highlight.js</span>
+          <span class="tag cyan">Tables · Lists · Blockquotes</span>
+        </div>
+      </div>
+      <div class="badge new">New</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- ── 10. Save history + memory ─────────────────── -->
+    <div class="step s10">
+      <div class="step-icon">💾</div>
+      <div class="step-body">
+        <div class="step-num">Step 10</div>
+        <div class="step-title">Save History + Persistent Memory</div>
+        <div class="step-desc">The frontend calls <b>/api/sessions/{id}/message</b> to save both turns to <b>SQLite</b>. If the agent used <b>remember()</b>, the fact is written to Redis under your Google user ID — permanently, surviving restarts and new sessions. The <b>RAG knowledge base</b> is stored on disk via persistent ChromaDB (<code>/data/chroma</code> on Render).</div>
+        <div class="tags">
+          <span class="tag green">SQLite — session history</span>
+          <span class="tag redis">Redis — cross-session memory</span>
+          <span class="tag green">ChromaDB on disk — RAG</span>
+        </div>
+      </div>
+      <div class="badge redis">Redis + SQLite</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- ── 11. Auto-title + sidebar update ───────────── -->
+    <div class="step s11">
+      <div class="step-icon">🗂️</div>
+      <div class="step-body">
+        <div class="step-num">Step 11</div>
+        <div class="step-title">Session Auto-Title + Sidebar Refresh</div>
+        <div class="step-desc">After saving the first user message, the server runs <b>auto_title()</b> — it takes the first 40 characters of the message and sets it as the session name. The sidebar refreshes to show the updated title. You can also rename or delete sessions directly from the sidebar.</div>
+        <div class="tags">
+          <span class="tag cyan">auto_title()</span>
+          <span class="tag cyan">PATCH /api/sessions/{id}</span>
+          <span class="tag cyan">DELETE /api/sessions/{id}</span>
+        </div>
       </div>
     </div>
 
     <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
 
-    <!-- Step 8 -->
-    <div class="step s8">
+    <!-- ── 12. Done ───────────────────────────────────── -->
+    <div class="step s12">
       <div class="step-icon">✅</div>
       <div class="step-body">
-        <div class="step-num">Step 8</div>
-        <div class="step-title">Done! Answer Displayed</div>
-        <div class="step-desc">The final answer appears in the chat bubble. If the agent made a <b>chart</b>, it draws it right there in the chat. Your question + the agent's answer are saved in <b>history</b> so the agent remembers the conversation for next time.</div>
+        <div class="step-num">Step 12</div>
+        <div class="step-title">Done — Answer Displayed</div>
+        <div class="step-desc">The fully rendered Markdown answer sits in the chat. Charts render inline via Chart.js. History is saved. Switch to any old session from the sidebar to resume it exactly where you left off. The bot remembers everything you told it to remember — across all sessions, forever.</div>
       </div>
     </div>
 
   </div><!-- /flow -->
 
-  <!-- Legend -->
+  <!-- ── Legend ──────────────────────────────────────── -->
   <div class="legend" id="legend">
-    <h2>📚 Key Words Explained Simply</h2>
+    <h2>📚 Key Concepts</h2>
     <div class="legend-grid">
-      <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div><div><b>LLM</b> — A giant AI brain trained on the whole internet</div></div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div><div><b>ReAct Loop</b> — Think → Act → Think again, repeat</div></div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--pink)"></div><div><b>Tool</b> — A special action the agent can run (search, code, etc.)</div></div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div><div><b>SSE</b> — Live data stream from server to browser</div></div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div><div><b>FastAPI</b> — The post office that handles your messages</div></div>
-      <div class="legend-item"><div class="legend-dot" style="background:#f87171"></div><div><b>RAG</b> — Agent's notebook where it stores &amp; finds documents</div></div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div><div><b>Scratchpad</b> — Agent's rough work (Thoughts + Observations)</div></div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div><div><b>Fallback</b> — If Plan A fails, try Plan B automatically</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div><div><b>ReAct Loop</b> — Reason + Act. Thought → Tool → Observation, up to 5 times.</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div><div><b>True Streaming</b> — Groq tokens arrive at the browser as the LLM generates them, not after.</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div><div><b>Redis</b> — Search cache (1 h), URL cache (24 h), rate limiting, permanent user memory.</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div><div><b>RAG</b> — Persistent ChromaDB on disk. Knowledge survives restarts.</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--pink)"></div><div><b>SSE</b> — Server-Sent Events. One HTTP connection, continuous event stream.</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div><div><b>marked.js</b> — Converts Markdown text to safe, sanitised HTML in the browser.</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div><div><b>OAuth</b> — Google login. User ID stored in a signed session cookie (itsdangerous).</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div><div><b>remember / recall</b> — Redis-backed tools. Facts persist across all sessions per user.</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div><div><b>datetime_now</b> — New tool. Gives the agent an accurate clock for any timezone.</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div><div><b>wikipedia_search</b> — New tool. Wikipedia REST API, no key needed.</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div><div><b>get_weather</b> — New tool. Live weather via wttr.in, no API key needed.</div></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div><div><b>Fallback chain</b> — Groq → Cerebras → Gemini → Ollama. Automatic, no user action.</div></div>
     </div>
   </div>
 
   <script>
-    // Animate elements into view as they scroll into viewport
     const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-        }
-      });
-    }, { threshold: 0.15 });
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.1 });
 
     document.querySelectorAll('.step, .arrow, .diamond-wrapper, .branch-row, .providers, .legend')
       .forEach(el => observer.observe(el));

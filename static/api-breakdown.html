@@ -114,9 +114,9 @@
 <body>
 
 <div class="hero">
-  <div class="badge">Boozo.ai — Full API Breakdown</div>
+  <div class="badge">Boozo.ai v3 — Full API Breakdown</div>
   <h1>How Every Request Works</h1>
-  <p>GET, POST, tokens, SSE, Pydantic, FastAPI — all explained from zero</p>
+  <p>GET, POST, SSE, Redis, streaming, OAuth, Pydantic, FastAPI, 11 tools — all explained from zero</p>
 </div>
 
 <nav class="nav">
@@ -154,7 +154,7 @@
   </div>
 
   <div class="card">
-    <b>In Boozo.ai:</b> FastAPI is the API layer. Your browser talks to <code>localhost:8000</code>. Everything goes through FastAPI — loading the page, sending messages, getting responses.
+    <b>In Boozo.ai:</b> FastAPI is the API layer. Your browser talks to <code>localhost:8080</code>. Everything goes through FastAPI — loading the page, Google OAuth login, session management, sending messages, getting responses.
   </div>
 </div>
 <div class="div"><hr></div>
@@ -222,44 +222,56 @@ Content-Type: application/json
 <div class="div"><hr></div>
 
 
-<!-- ══ 3. THE 3 ROUTES ══ -->
+<!-- ══ 3. ALL ROUTES ══ -->
 <div class="sec" id="routes">
   <div class="sec-head">
     <span class="num">03</span>
     <div class="sec-icon ic-purple">🗺️</div>
-    <div><div class="sec-title t-purple">The 3 Routes in Boozo.ai</div><div class="sec-sub">Your entire backend in main.py — just 3 endpoints</div></div>
+    <div><div class="sec-title t-purple">All Routes in Boozo.ai</div><div class="sec-sub">main.py — every endpoint explained</div></div>
   </div>
 
   <div class="code">
-<span class="cm"># main.py — the entire FastAPI app</span>
+<span class="cm"># main.py — full route list</span>
 
-app = <span class="fn">FastAPI</span>(title=<span class="st">"Boozo.ai"</span>)
-app.<span class="fn">mount</span>(<span class="st">"/static"</span>, StaticFiles(directory=<span class="st">"static"</span>))
+<span class="cm">━━━ STATIC ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
+<span class="kw">GET</span>  /                <span class="cm"># serve static/index.html</span>
+<span class="kw">GET</span>  /health          <span class="cm"># liveness check → {"status":"ok"}</span>
 
-<span class="cm">━━━ ROUTE 1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
-<span class="kw">@app.get</span>(<span class="st">"/"</span>)
-<span class="kw">def</span> <span class="fn">serve_frontend</span>():
-    <span class="kw">return</span> <span class="cl">FileResponse</span>(<span class="st">"static/index.html"</span>)
+<span class="cm">━━━ AUTH (Google OAuth) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
+<span class="kw">GET</span>  /auth/google     <span class="cm"># redirect to Google consent screen</span>
+<span class="kw">GET</span>  /auth/callback   <span class="cm"># Google redirects back here after login</span>
+<span class="kw">GET</span>  /auth/me         <span class="cm"># current user info or 401</span>
+<span class="kw">POST</span> /auth/logout     <span class="cm"># clear session cookie</span>
 
-<span class="cm">━━━ ROUTE 2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
+<span class="cm">━━━ HISTORY API (requires login) ━━━━━━━━━━━━━━━━━━━━━━</span>
+<span class="kw">GET</span>    /api/sessions            <span class="cm"># list all sessions for user</span>
+<span class="kw">POST</span>   /api/sessions            <span class="cm"># create new session</span>
+<span class="kw">GET</span>    /api/sessions/{id}       <span class="cm"># fetch messages for session</span>
+<span class="kw">PATCH</span>  /api/sessions/{id}       <span class="cm"># rename session</span>
+<span class="kw">DELETE</span> /api/sessions/{id}       <span class="cm"># delete session</span>
+<span class="kw">POST</span>   /api/sessions/{id}/message  <span class="cm"># save message + auto-title</span>
+
+<span class="cm">━━━ CHAT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
 <span class="kw">@app.post</span>(<span class="st">"/chat"</span>)
-<span class="kw">def</span> <span class="fn">chat</span>(req: <span class="cl">ChatRequest</span>):
+<span class="kw">def</span> <span class="fn">chat</span>(req: <span class="cl">ChatRequest</span>, request: <span class="cl">Request</span>):
+    <span class="cm"># 1. Validate input length (max 4000 chars)</span>
+    <span class="cm"># 2. Check Redis rate limit (30 req/min per user)</span>
+    <span class="cm"># 3. Run agent, stream SSE events back</span>
     <span class="kw">def</span> <span class="fn">event_stream</span>():
-        <span class="kw">for</span> event <span class="kw">in</span> <span class="fn">run_agent</span>(req.message, req.history, ...):
+        <span class="kw">for</span> event <span class="kw">in</span> <span class="fn">run_agent</span>(req.message, req.history,
+                                  ..., user_id=user_id):
             <span class="kw">yield</span> <span class="st">f"data: {json.dumps(event)}\n\n"</span>
-    <span class="kw">return</span> <span class="cl">StreamingResponse</span>(event_stream(), media_type=<span class="st">"text/event-stream"</span>)
-
-<span class="cm">━━━ ROUTE 3 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>
-<span class="kw">@app.get</span>(<span class="st">"/health"</span>)
-<span class="kw">def</span> <span class="fn">health</span>():
-    <span class="kw">return</span> {<span class="st">"status"</span>: <span class="st">"ok"</span>}
+    <span class="kw">return</span> <span class="cl">StreamingResponse</span>(event_stream(),
+               media_type=<span class="st">"text/event-stream"</span>)
   </div>
 
   <div class="g2">
-    <div class="gc"><div class="gt"><span class="method get">GET</span><code>/</code></div><div class="gd">Returns <code>index.html</code>. This is what runs when you open <code>localhost:8000</code> in Chrome. Just serves the file.</div></div>
-    <div class="gc"><div class="gt"><span class="method post">POST</span><code>/chat</code></div><div class="gd">The main brain. Receives your message, starts the agent, streams events back. This is where all the AI magic happens.</div></div>
-    <div class="gc"><div class="gt"><span class="method get">GET</span><code>/health</code></div><div class="gd">Returns <code>{"status":"ok"}</code>. Used to check if the server is running. We use it after every restart with <code>curl /health</code>.</div></div>
-    <div class="gc"><div class="gt"><span class="method get">GET</span><code>/static/*</code></div><div class="gd">Serves any file in the static/ folder. This is how <code>shiro.jpg</code>, <code>flowchart.html</code>, and <code>concepts.html</code> are delivered.</div></div>
+    <div class="gc"><div class="gt"><span class="method get">GET</span><code>/</code></div><div class="gd">Returns <code>index.html</code>. Opens when you go to <code>localhost:8080</code>.</div></div>
+    <div class="gc"><div class="gt"><span class="method post">POST</span><code>/chat</code></div><div class="gd">The main brain. Validates input, checks rate limit, runs ReAct agent, streams SSE events back.</div></div>
+    <div class="gc"><div class="gt"><span class="method get">GET</span><code>/auth/google</code></div><div class="gd">Redirects to Google's OAuth login page. User signs in with Google.</div></div>
+    <div class="gc"><div class="gt"><span class="method get">GET</span><code>/auth/callback</code></div><div class="gd">Google calls this after login. Server stores user in SQLite + sets session cookie.</div></div>
+    <div class="gc"><div class="gt"><span class="method get">GET</span><code>/api/sessions</code></div><div class="gd">Returns the logged-in user's chat session list for the sidebar.</div></div>
+    <div class="gc"><div class="gt"><span class="method post">POST</span><code>/api/sessions/{id}/message</code></div><div class="gd">Saves user + assistant message to SQLite and auto-titles the session.</div></div>
   </div>
 </div>
 <div class="div"><hr></div>
@@ -328,61 +340,67 @@ app.<span class="fn">mount</span>(<span class="st">"/static"</span>, StaticFiles
   <div class="sec-head">
     <span class="num">05</span>
     <div class="sec-icon ic-pink">🔀</div>
-    <div><div class="sec-title t-pink">Full /chat Request Flow</div><div class="sec-sub">From "Enter" key to answer on screen — every step</div></div>
+    <div><div class="sec-title t-pink">Full /chat Request Flow</div><div class="sec-sub">From "Enter" key to answer on screen — every step including Redis + streaming</div></div>
   </div>
 
   <div class="flow">
     <div class="fnode" style="border-color:rgba(0,229,255,0.35)">
       <span class="fi">⌨️</span>
-      <div><div class="fl t-cyan">You press Enter in the browser</div><div class="fd">JavaScript collects message, history, image, selected_model</div></div>
+      <div><div class="fl t-cyan">You type and press Enter</div><div class="fd">Char counter validates ≤ 4000 chars. JS collects message, history, image, model.</div></div>
     </div>
-    <div class="farr"><div class="fline"></div><div class="flabel">fetch() POST</div><div class="fhead"></div></div>
+    <div class="farr"><div class="fline"></div><div class="flabel">fetch() POST /chat</div><div class="fhead"></div></div>
 
     <div class="fnode" style="border-color:rgba(59,130,246,0.35)">
       <span class="fi">📡</span>
-      <div><div class="fl t-blue">HTTP POST /chat arrives at FastAPI</div><div class="fd">Body: JSON with message + history + selected_model</div></div>
+      <div><div class="fl t-blue">HTTP POST /chat arrives at FastAPI</div><div class="fd">Body: JSON with message + history + selected_model + optional image</div></div>
     </div>
     <div class="farr"><div class="fline"></div><div class="flabel">Pydantic validates</div><div class="fhead"></div></div>
 
     <div class="fnode" style="border-color:rgba(245,158,11,0.35)">
       <span class="fi">🛡️</span>
-      <div><div class="fl t-amber">Pydantic builds ChatRequest object</div><div class="fd">Checks types, fills defaults, rejects bad input</div></div>
+      <div><div class="fl t-amber">Input validation + Rate limiting</div><div class="fd">400 if empty or &gt;4000 chars. Redis INCR checks 30 req/min — 429 if exceeded.</div></div>
     </div>
-    <div class="farr"><div class="fline"></div><div class="flabel">calls in thread</div><div class="fhead"></div></div>
+    <div class="farr"><div class="fline"></div><div class="flabel">calls run_agent()</div><div class="fhead"></div></div>
 
     <div class="fnode" style="border-color:rgba(124,58,237,0.35)">
       <span class="fi">🔄</span>
-      <div><div class="fl t-purple">run_agent() starts — ReAct loop begins</div><div class="fd">Builds prompt from system + history + message + scratchpad</div></div>
+      <div><div class="fl t-purple">run_agent() starts — ReAct loop begins</div><div class="fd">User context set for memory tools. Prompt built from system + history + scratchpad.</div></div>
     </div>
-    <div class="farr"><div class="fline"></div><div class="flabel">HTTP to LLM API</div><div class="fhead"></div></div>
+    <div class="farr"><div class="fline"></div><div class="flabel">streaming HTTP to Groq</div><div class="fhead"></div></div>
 
     <div class="fnode" style="border-color:rgba(0,229,255,0.35)">
       <span class="fi">⚡</span>
-      <div><div class="fl t-cyan">Groq / Cerebras / Gemini / Ollama called</div><div class="fd">Full prompt sent. LLM predicts tokens. Returns Thought + Action OR Final Answer</div></div>
+      <div><div class="fl t-cyan">call_groq_stream() — real-time token flow</div><div class="fd">Groq SSE stream opened. Tokens arrive one by one. "Final Answer:" detected in buffer → answer_token events start immediately.</div></div>
     </div>
-    <div class="farr"><div class="fline"></div><div class="flabel">parse output</div><div class="fhead"></div></div>
+    <div class="farr"><div class="fline"></div><div class="flabel">parse full buffer</div><div class="fhead"></div></div>
 
     <div class="fnode" style="border-color:rgba(245,158,11,0.35)">
       <span class="fi">🔍</span>
-      <div><div class="fl t-amber">Agent parses LLM output with regex</div><div class="fd">Extracts: Thought / Action / Final Answer sections</div></div>
+      <div><div class="fl t-amber">Agent parses full LLM output with regex</div><div class="fd">Extracts: Thought / Action / Final Answer. Emits thought event to right panel.</div></div>
     </div>
-    <div class="farr"><div class="fline"></div><div class="flabel">if Action → run tool</div><div class="fhead"></div></div>
+    <div class="farr"><div class="fline"></div><div class="flabel">if Action → check Redis cache</div><div class="fhead"></div></div>
+
+    <div class="fnode" style="border-color:rgba(220,38,38,0.35)">
+      <span class="fi">⚡</span>
+      <div><div class="fl" style="color:#fca5a5">Redis cache check (web_search / rag_ingest URLs)</div><div class="fd">Cache hit → instant result, no network call. Cache miss → fetch live, store in Redis.</div></div>
+    </div>
+    <div class="farr"><div class="fline"></div><div class="flabel">11 tools available</div><div class="fhead"></div></div>
 
     <div class="fnode" style="border-color:rgba(16,185,129,0.35)">
       <span class="fi">🛠️</span>
-      <div><div class="fl t-green">Tool runs (web_search / code_exec / plot etc.)</div><div class="fd">Result added to scratchpad as Observation → loop back to LLM</div></div>
+      <div><div class="fl t-green">Tool dispatches: web_search / code_exec / calculator / rag_ingest / rag_search / plot / remember / recall / datetime_now / wikipedia_search / get_weather</div><div class="fd">Result added to scratchpad as Observation → loop repeats from top (max 5 times)</div></div>
     </div>
-    <div class="farr"><div class="fline"></div><div class="flabel">if Final Answer → stream</div><div class="fhead"></div></div>
+    <div class="farr"><div class="fline"></div><div class="flabel">if Final Answer → done event</div><div class="fhead"></div></div>
 
     <div class="fnode" style="border-color:rgba(224,64,251,0.35)">
       <span class="fi">📤</span>
-      <div><div class="fl t-pink">Each event yielded as SSE data</div><div class="fd">data: {"type":"thought","content":"..."}\n\n sent immediately</div></div>
+      <div><div class="fl t-pink">done event received by browser</div><div class="fd">marked.js renders full Markdown. DOMPurify sanitises. Copy buttons added to code blocks.</div></div>
     </div>
-    <div class="farr"><div class="fline"></div><div class="flabel">EventSource reads</div><div class="fhead"></div></div>
+    <div class="farr"><div class="fline"></div><div class="flabel">save to SQLite + Redis</div><div class="fhead"></div></div>
 
     <div class="fnode" style="border-color:rgba(16,185,129,0.35)">
       <span class="fi">✅</span>
-      <div><div class="fl t-green">Browser renders answer letter by letter</div><div class="fd">Right panel updates with thoughts, tools, timing, scratchpad</div></div>
+      <div><div class="fl t-green">Answer displayed. History saved. Memory persisted.</div><div class="fd">Right panel shows thoughts, tools, latency bars, iteration dots, model badge.</div></div>
     </div>
   </div>
 </div>
@@ -463,7 +481,8 @@ app.<span class="fn">mount</span>(<span class="st">"/static"</span>, StaticFiles
   <div class="hbox bg-blue">
     <b>Normal HTTP:</b> browser asks → waits → gets full response at once.<br>
     <b>SSE:</b> browser asks → connection stays open → server sends pieces one by one → browser updates live.<br><br>
-    This is why you see Thought, Action, Observation appear one by one instead of all at the end.
+    This is why you see Thought, Action, Observation appear one by one instead of all at the end.<br><br>
+    <b>New in v3 — True Groq streaming:</b> When Groq is selected, <code>call_groq_stream()</code> opens Groq's own SSE stream. The agent detects <code>"Final Answer:"</code> in the incoming token buffer and immediately starts forwarding tokens as <code>answer_token</code> events — the answer appears word by word as the LLM generates it, not after it finishes.
   </div>
 
   <div class="card"><b>Exact SSE format — what travels over the wire:</b></div>
@@ -533,73 +552,87 @@ app.<span class="fn">mount</span>(<span class="st">"/static"</span>, StaticFiles
     <div><div class="sec-title t-orange">Complete Lifecycle — Everything Together</div><div class="sec-sub">From your keystroke to the answer — every millisecond explained</div></div>
   </div>
 
-  <div class="card"><b>You ask: "What is the latest Python version?"</b></div>
+  <div class="card"><b>You ask: "What is the latest Python version?" (logged in, Groq selected)</b></div>
 
   <div class="code">
 <span class="cm">T=0ms    You press Enter</span>
-         JS calls fetch(<span class="st">'/chat'</span>, { method:<span class="st">'POST'</span>, body: JSON })
+         Char counter shows 38/4000. JS calls fetch(<span class="st">'/chat'</span>, { method:<span class="st">'POST'</span>, body: JSON })
 
-<span class="cm">T=1ms    HTTP packet leaves your browser</span>
-         POST /chat HTTP/<span class="nu">1.1</span>
-         { <span class="st">"message"</span>: <span class="st">"What is the latest Python version?"</span>, <span class="st">"history"</span>: [] }
+<span class="cm">T=1ms    HTTP POST /chat arrives at FastAPI (localhost:8080)</span>
+         Body: { <span class="st">"message"</span>: <span class="st">"What is the latest Python version?"</span>, <span class="st">"history"</span>: [] }
 
-<span class="cm">T=2ms    FastAPI receives it</span>
-         Pydantic validates → ChatRequest object created
-         FastAPI runs chat() in a thread pool
+<span class="cm">T=2ms    Input validation + Rate limit check</span>
+         len(message) = 38 ✓ (under 4000)
+         Redis INCR boozo:rl:user123 → count=3 ✓ (under 30)
 
 <span class="cm">T=3ms    agent.py starts</span>
+         set_user_context(<span class="st">"user123"</span>)  <span class="cm"># enables remember/recall tools</span>
          SSE event → { type: <span class="st">"iteration"</span>, n: <span class="nu">1</span>, max: <span class="nu">5</span> }
          SSE event → { type: <span class="st">"tokens"</span>, used: <span class="nu">280</span>, limit: <span class="nu">8192</span> }
 
-<span class="cm">T=4ms    Prompt built + sent to Groq API</span>
-         [System prompt + history + question + empty scratchpad]
-         httpx.post(<span class="st">"https://api.groq.com/..."</span>)
+<span class="cm">T=4ms    Groq SSE stream opened (call_groq_stream)</span>
+         httpx.stream(<span class="st">"POST"</span>, GROQ_URL, ..., stream=<span class="kw">True</span>)
+         Tokens begin arriving from Groq...
 
-<span class="cm">T=900ms  Groq returns LLM response</span>
-         <span class="st">"Thought: I should search for current Python version.
-          Action: web_search(latest Python version 2024)"</span>
+<span class="cm">T=200ms  First tokens arrive from Groq</span>
+         <span class="st">"Thought"</span>, <span class="st">":"</span>, <span class="st">" I"</span>, <span class="st">" should"</span>, <span class="st">" search"</span>, ...
+         (buffered, not yet emitted — waiting for "Final Answer:")
 
-         SSE event → { type: <span class="st">"timing"</span>, who: <span class="st">"llm"</span>, ms: <span class="nu">897</span> }
+<span class="cm">T=900ms  Groq stream complete. Full text buffered:</span>
+         <span class="st">"Thought: I should search for the current Python version.
+          Action: web_search(latest Python version)"</span>
+
+         No "Final Answer:" found → parse for Action
+         SSE event → { type: <span class="st">"timing"</span>, who: <span class="st">"llm"</span>, ms: <span class="nu">896</span> }
          SSE event → { type: <span class="st">"model_used"</span>, content: <span class="st">"groq:llama-3.3-70b"</span> }
          SSE event → { type: <span class="st">"thought"</span>, content: <span class="st">"I should search..."</span> }
-         SSE event → { type: <span class="st">"action"</span>, content: <span class="st">"web_search(latest Python...)"</span> }
+         SSE event → { type: <span class="st">"action"</span>, content: <span class="st">"web_search(latest Python version)"</span> }
 
-<span class="cm">T=901ms  tool runs — web_search()</span>
-         DuckDuckGo HTML scraped → top results extracted
-         SSE event → { type: <span class="st">"observation"</span>, content: <span class="st">"Python 3.13..."</span> }
-         SSE event → { type: <span class="st">"scratchpad"</span>, content: <span class="st">"Thought:...\nAction:...\nObservation:..."</span> }
+<span class="cm">T=901ms  Redis cache check for web_search</span>
+         GET boozo:search:a3f2b1... → <span class="kw">None</span>  <span class="cm"># cache miss — first time</span>
+         DuckDuckGo scraped → results extracted
+         SET boozo:search:a3f2b1... TTL=3600
+
+         SSE event → { type: <span class="st">"observation"</span>, content: <span class="st">"Python 3.13 released Oct 2024..."</span> }
 
 <span class="cm">T=902ms  Loop iteration 2 — prompt rebuilt with scratchpad</span>
-         New prompt = old prompt + Thought + Action + Observation
-         Sent to Groq again
+         New Groq SSE stream opened with Thought+Action+Observation appended
 
-<span class="cm">T=1700ms Groq returns</span>
-         <span class="st">"Thought: I now have the answer.
-          Final Answer: Python 3.13 was released in October 2024..."</span>
+<span class="cm">T=1200ms "Final Answer:" detected in Groq token stream!</span>
+         Tokens AFTER marker streamed directly to browser:
+         SSE event → { type: <span class="st">"answer_token"</span>, content: <span class="st">"Python"</span> }
+         SSE event → { type: <span class="st">"answer_token"</span>, content: <span class="st">" 3.13"</span> }
+         SSE event → { type: <span class="st">"answer_token"</span>, content: <span class="st">" was"</span> }
+         ... (tokens flow in real time as Groq generates them)
 
-         SSE event → { type: <span class="st">"thought"</span>, content: <span class="st">"I now have the answer"</span> }
-
-<span class="cm">T=1701ms Streaming begins — character by character</span>
-         SSE event → { type: <span class="st">"answer_token"</span>, content: <span class="st">"P"</span> }
-         SSE event → { type: <span class="st">"answer_token"</span>, content: <span class="st">"y"</span> }
-         SSE event → { type: <span class="st">"answer_token"</span>, content: <span class="st">"t"</span> }
-         ... (hundreds of character events)
-
-<span class="cm">T=1750ms Done</span>
+<span class="cm">T=1600ms Groq stream complete</span>
+         SSE event → { type: <span class="st">"thought"</span>, content: <span class="st">"I now have the answer."</span> }
          SSE event → { type: <span class="st">"done"</span>, content: <span class="st">"Python 3.13 was released..."</span> }
-         SSE connection closed
-         Browser displays final formatted answer
+
+<span class="cm">T=1601ms Browser receives done event</span>
+         marked.parse(answer) → Markdown rendered to HTML
+         DOMPurify.sanitize(html) → safe HTML inserted
+         Copy buttons added to code blocks
+         boozo:turn-done event dispatched
+
+<span class="cm">T=1602ms History saved</span>
+         POST /api/sessions/sess_abc/message (user turn)
+         POST /api/sessions/sess_abc/message (assistant turn)
+         auto_title() → session named "What is the latest Python"
   </div>
 
   <div class="hbox bg-orange">
-    <b>Summary of all the tech working together:</b><br><br>
-    <b>FastAPI</b> — receives the request, validates it, starts the agent in a thread<br>
-    <b>Pydantic</b> — cleans and validates the incoming JSON<br>
-    <b>agent.py</b> — runs the ReAct loop, calls LLMs, dispatches tools<br>
-    <b>Groq API</b> — generates tokens one by one using the LLM (temperature 0.3)<br>
-    <b>tools.py</b> — runs web_search / code_exec / plot etc. when needed<br>
-    <b>SSE</b> — streams every event back to the browser instantly<br>
-    <b>JavaScript</b> — reads the stream, updates right panel + chat bubble live
+    <b>All layers working together (v3):</b><br><br>
+    <b>FastAPI</b> — receives, validates (length + rate limit), starts agent<br>
+    <b>Pydantic</b> — cleans and type-checks the incoming JSON<br>
+    <b>Redis</b> — rate limiting (INCR/EXPIRE), search cache (1h), URL cache (24h), user memory<br>
+    <b>agent.py</b> — ReAct loop, Groq token streaming, tool dispatch<br>
+    <b>call_groq_stream()</b> — SSE stream from Groq, "Final Answer:" detected mid-stream<br>
+    <b>tools.py</b> — 11 tools: web_search, code_exec, calculator, rag_ingest, rag_search, plot, remember, recall, datetime_now, wikipedia_search, get_weather<br>
+    <b>SSE</b> — every event (thought/action/token/done) streamed to browser instantly<br>
+    <b>marked.js + DOMPurify</b> — Markdown rendered + sanitised in browser<br>
+    <b>SQLite</b> — session history, user accounts, auto-titles<br>
+    <b>JavaScript</b> — reads SSE, updates chat + right panel + sidebar live
   </div>
 </div>
 

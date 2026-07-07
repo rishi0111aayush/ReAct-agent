@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Built Without LangChain — Boozo.ai</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --bg:#050816;--s1:#0d1224;--s2:#111827;--border:#1e2a4a;
+      --cyan:#00e5ff;--purple:#7c3aed;--pink:#e040fb;--green:#10b981;
+      --amber:#f59e0b;--red:#ef4444;--blue:#3b82f6;--orange:#f97316;
+      --text:#e2e8f0;--muted:#64748b;
+    }
+    body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;padding-bottom:80px;}
+
+    /* HERO */
+    .hero{text-align:center;padding:64px 20px 48px;background:radial-gradient(ellipse at top,rgba(124,58,237,0.12) 0%,transparent 65%);border-bottom:1px solid var(--border);margin-bottom:54px;}
+    .badge{display:inline-block;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:999px;padding:5px 16px;font-size:.75rem;color:#f87171;letter-spacing:.1em;text-transform:uppercase;margin-bottom:18px;}
+    .hero h1{font-size:2.3rem;font-weight:800;background:linear-gradient(135deg,var(--cyan),var(--purple),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;line-height:1.2;}
+    .hero p{color:var(--muted);font-size:.95rem;max-width:540px;margin:0 auto 20px;}
+    .hero-tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+    .hero-tag{background:rgba(0,229,255,0.07);border:1px solid rgba(0,229,255,0.18);border-radius:999px;padding:5px 14px;font-size:.76rem;color:var(--cyan);}
+
+    /* NAV */
+    .nav{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:0 20px;margin-bottom:54px;}
+    .nav a{text-decoration:none;background:var(--s1);border:1px solid var(--border);border-radius:999px;padding:6px 15px;font-size:.78rem;color:var(--muted);transition:all .2s;}
+    .nav a:hover{border-color:var(--cyan);color:var(--cyan);}
+
+    /* SECTION */
+    .sec{max-width:900px;margin:0 auto 64px;padding:0 20px;opacity:0;transform:translateY(32px);transition:opacity .5s,transform .5s;}
+    .sec.on{opacity:1;transform:translateY(0);}
+    .sec-head{display:flex;align-items:center;gap:14px;margin-bottom:22px;}
+    .sec-icon{font-size:1.9rem;width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .sec-title{font-size:1.3rem;font-weight:800;}
+    .sec-sub{font-size:.83rem;color:var(--muted);margin-top:3px;}
+    .num{font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:999px;padding:4px 12px;white-space:nowrap;}
+
+    /* DIVIDER */
+    .div{max-width:900px;margin:0 auto 54px;padding:0 20px;}
+    .div hr{border:none;height:1px;background:linear-gradient(to right,transparent,var(--border),transparent);}
+
+    /* COMPARISON TABLE */
+    .compare{width:100%;border-collapse:collapse;font-size:.86rem;margin-bottom:16px;}
+    .compare th{padding:12px 16px;text-align:left;font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border-bottom:2px solid var(--border);}
+    .compare td{padding:12px 16px;border-bottom:1px solid rgba(30,42,74,0.6);vertical-align:top;line-height:1.6;}
+    .compare tr:last-child td{border-bottom:none;}
+    .compare .feature{color:var(--text);font-weight:600;}
+    .compare .lc{color:#f87171;}
+    .compare .us{color:#6ee7b7;}
+    .th-lc{color:#f87171;}
+    .th-us{color:#6ee7b7;}
+
+    /* CARDS */
+    .card{background:var(--s1);border:1.5px solid var(--border);border-radius:14px;padding:20px 24px;margin-bottom:14px;font-size:.88rem;line-height:1.75;color:#94a3b8;}
+    .card b{color:var(--text);}
+    .hbox{border-radius:12px;padding:16px 20px;margin-bottom:14px;font-size:.88rem;line-height:1.7;border-left:4px solid;}
+    .hbox b{color:var(--text);}
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+    @media(max-width:600px){.g2{grid-template-columns:1fr;}}
+    .gc{background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:16px 18px;}
+    .gc .gt{font-size:.9rem;font-weight:700;margin-bottom:7px;}
+    .gc .gd{font-size:.82rem;color:#94a3b8;line-height:1.6;}
+
+    /* CODE */
+    .code{background:#080e1e;border:1.5px solid var(--border);border-radius:12px;padding:18px 22px;font-family:'Courier New',monospace;font-size:.82rem;line-height:1.85;margin-bottom:14px;overflow-x:auto;}
+    .code .kw{color:var(--pink);}
+    .code .fn{color:var(--cyan);}
+    .code .st{color:var(--green);}
+    .code .cm{color:var(--muted);}
+    .code .nu{color:var(--amber);}
+    .code .cl{color:#a78bfa;}
+
+    /* LAYER STACK */
+    .stack{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+    .layer{border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:14px;font-size:.87rem;}
+    .layer-icon{font-size:1.4rem;flex-shrink:0;width:40px;text-align:center;}
+    .layer-body{flex:1;}
+    .layer-title{font-weight:700;margin-bottom:2px;}
+    .layer-desc{font-size:.79rem;color:#94a3b8;line-height:1.5;}
+    .layer-file{font-size:.72rem;font-family:monospace;opacity:.7;margin-top:3px;}
+
+    .ly-agent  {background:rgba(124,58,237,0.08);border:1.5px solid rgba(124,58,237,0.25);}
+    .ly-tools  {background:rgba(16,185,129,0.07);border:1.5px solid rgba(16,185,129,0.22);}
+    .ly-cache  {background:rgba(220,38,38,0.08);border:1.5px solid rgba(220,38,38,0.22);}
+    .ly-server {background:rgba(0,229,255,0.07);border:1.5px solid rgba(0,229,255,0.20);}
+    .ly-db     {background:rgba(245,158,11,0.07);border:1.5px solid rgba(245,158,11,0.22);}
+    .ly-ui     {background:rgba(224,64,251,0.07);border:1.5px solid rgba(224,64,251,0.20);}
+
+    /* PROS/CONS */
+    .pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+    @media(max-width:560px){.pros-cons{grid-template-columns:1fr;}}
+    .pc-box{background:var(--s2);border-radius:12px;padding:16px 18px;}
+    .pc-title{font-size:.85rem;font-weight:800;margin-bottom:10px;}
+    .pc-item{font-size:.82rem;color:#94a3b8;line-height:1.6;display:flex;gap:8px;margin-bottom:6px;}
+    .pc-item span:first-child{flex-shrink:0;}
+
+    /* TOOL GRID */
+    .tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px;}
+    .tool-card{background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:13px 15px;}
+    .tool-name{font-family:monospace;font-size:.84rem;font-weight:700;margin-bottom:4px;}
+    .tool-desc{font-size:.76rem;color:#94a3b8;line-height:1.5;}
+    .tool-impl{font-size:.68rem;font-family:monospace;margin-top:5px;opacity:.65;}
+
+    /* colour helpers */
+    .t-cyan{color:var(--cyan);} .t-purple{color:#a78bfa;} .t-pink{color:var(--pink);}
+    .t-green{color:#6ee7b7;} .t-amber{color:var(--amber);} .t-red{color:#f87171;}
+    .ic-cyan{background:rgba(0,229,255,0.09);}  .ic-purple{background:rgba(124,58,237,0.11);}
+    .ic-pink{background:rgba(224,64,251,0.09);}  .ic-green{background:rgba(16,185,129,0.09);}
+    .ic-amber{background:rgba(245,158,11,0.09);}  .ic-red{background:rgba(239,68,68,0.09);}
+    .bg-cyan{background:rgba(0,229,255,0.05);border-left-color:var(--cyan);}
+    .bg-purple{background:rgba(124,58,237,0.07);border-left-color:var(--purple);}
+    .bg-green{background:rgba(16,185,129,0.06);border-left-color:var(--green);}
+    .bg-amber{background:rgba(245,158,11,0.06);border-left-color:var(--amber);}
+    .bg-red{background:rgba(239,68,68,0.06);border-left-color:var(--red);}
+    code{background:rgba(0,229,255,0.08);color:var(--cyan);padding:1px 7px;border-radius:5px;font-size:.85em;}
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">Zero Dependencies on LangChain</div>
+  <h1>Boozo.ai Was Built<br>From Scratch</h1>
+  <p>No LangChain. No LlamaIndex. No AutoGen. Every layer — agent loop, tool dispatch, LLM calls, streaming, RAG, caching — written by hand in plain Python.</p>
+  <div class="hero-tags">
+    <span class="hero-tag">Plain Python</span>
+    <span class="hero-tag">Custom ReAct Loop</span>
+    <span class="hero-tag">Direct API Calls</span>
+    <span class="hero-tag">Hand-written Tools</span>
+    <span class="hero-tag">No AI Frameworks</span>
+  </div>
+</div>
+
+<nav class="nav">
+  <a href="#what-is-lc">What is LangChain</a>
+  <a href="#what-we-did">What We Built</a>
+  <a href="#compare">Side-by-Side</a>
+  <a href="#our-layers">Our Layers</a>
+  <a href="#our-tools">Our 11 Tools</a>
+  <a href="#why">Why From Scratch</a>
+  <a href="flowchart.html">Architecture</a>
+  <a href="/">Back to Boozo.ai</a>
+</nav>
+
+
+<!-- ══ 1. WHAT IS LANGCHAIN ══ -->
+<div class="sec" id="what-is-lc">
+  <div class="sec-head">
+    <span class="num">01</span>
+    <div class="sec-icon ic-red">🔗</div>
+    <div><div class="sec-title t-red">What is LangChain?</div><div class="sec-sub">The popular AI framework — and what it hides from you</div></div>
+  </div>
+
+  <div class="hbox bg-red">
+    LangChain is a Python framework that gives you pre-built components for building AI apps — agent loops, tool wrappers, LLM connectors, prompt templates, vector store integrations. You import it and wire things together. Most AI tutorials use it.
+  </div>
+
+  <div class="g2">
+    <div class="gc">
+      <div class="gt t-red">With LangChain</div>
+      <div class="gd">
+        Import <code>AgentExecutor</code>, pass it tools, run it.<br><br>
+        You don't see the prompt. You don't see how tools are called. You don't see how the LLM output is parsed. LangChain handles it all — invisibly.
+      </div>
+    </div>
+    <div class="gc">
+      <div class="gt t-green">Without LangChain (us)</div>
+      <div class="gd">
+        Write the loop yourself. Write the prompt. Parse the LLM output with regex. Call APIs directly. Every step is visible, readable, and fully under your control.
+      </div>
+    </div>
+  </div>
+
+  <div class="code">
+<span class="cm"># LangChain — 5 lines, but what's actually happening?</span>
+<span class="kw">from</span> langchain.agents <span class="kw">import</span> initialize_agent, Tool
+<span class="kw">from</span> langchain.llms <span class="kw">import</span> OpenAI
+
+tools = [<span class="cl">Tool</span>(name=<span class="st">"Search"</span>, func=search_fn, description=<span class="st">"..."</span>)]
+agent = <span class="fn">initialize_agent</span>(tools, <span class="cl">OpenAI</span>(), agent=<span class="st">"zero-shot-react-description"</span>)
+agent.<span class="fn">run</span>(<span class="st">"What is Python 3.13?"</span>)
+
+<span class="cm"># What happens inside? You have no idea unless you read LangChain source code.</span>
+<span class="cm"># How is the prompt built? How are tools parsed? How does it loop? Mystery.</span>
+  </div>
+
+  <div class="card">
+    LangChain is not bad — it is fast for prototyping. But when something breaks, you're debugging framework internals. When you want to change how the agent thinks, you're fighting abstractions. When you need custom streaming behaviour, you're writing workarounds.
+  </div>
+</div>
+<div class="div"><hr></div>
+
+
+<!-- ══ 2. WHAT WE BUILT ══ -->
+<div class="sec" id="what-we-did">
+  <div class="sec-head">
+    <span class="num">02</span>
+    <div class="sec-icon ic-green">🔨</div>
+    <div><div class="sec-title t-green">What We Built Instead</div><div class="sec-sub">Every component written in plain Python — nothing hidden</div></div>
+  </div>
+
+  <div class="code">
+<span class="cm"># agent.py — our ReAct loop. ~250 lines. Every line readable.</span>
+
+<span class="kw">def</span> <span class="fn">run_agent</span>(user_message, history, image, image_mime, model, user_id):
+
+    <span class="kw">for</span> iteration <span class="kw">in</span> range(<span class="nu">5</span>):             <span class="cm"># max 5 iterations</span>
+
+        prompt = REACT_TEMPLATE.<span class="fn">format</span>(   <span class="cm"># we write the prompt</span>
+            system=SYSTEM_PROMPT,
+            history=history_str,
+            user_message=user_message,
+            scratchpad=scratchpad,
+        )
+
+        <span class="cm"># we call the LLM directly</span>
+        <span class="kw">for</span> token <span class="kw">in</span> <span class="fn">call_groq_stream</span>(prompt, img):
+            full_text += token
+            <span class="kw">if</span> <span class="st">"Final Answer:"</span> <span class="kw">in</span> full_text:
+                <span class="kw">yield</span> {<span class="st">"type"</span>: <span class="st">"answer_token"</span>, <span class="st">"content"</span>: token}
+
+        <span class="cm"># we parse the output ourselves</span>
+        parsed = <span class="fn">parse_llm_output</span>(full_text)  <span class="cm"># plain regex</span>
+
+        <span class="kw">if</span> parsed[<span class="st">"final_answer"</span>]:
+            <span class="kw">yield</span> {<span class="st">"type"</span>: <span class="st">"done"</span>, <span class="st">"content"</span>: parsed[<span class="st">"final_answer"</span>]}
+            <span class="kw">return</span>
+
+        <span class="kw">if</span> parsed[<span class="st">"action"</span>]:
+            observation = <span class="fn">dispatch_tool</span>(parsed[<span class="st">"action"</span>])  <span class="cm"># we dispatch</span>
+            scratchpad += <span class="st">f"Observation: {observation}\n"</span>
+  </div>
+
+  <div class="hbox bg-green">
+    <b>This is the entire agent brain.</b> No magic. No hidden prompts. No framework wrapping things you can't see. If something breaks, you read 250 lines of Python and find it. If you want to change how the agent thinks, you edit the prompt string directly.
+  </div>
+</div>
+<div class="div"><hr></div>
+
+
+<!-- ══ 3. SIDE BY SIDE ══ -->
+<div class="sec" id="compare">
+  <div class="sec-head">
+    <span class="num">03</span>
+    <div class="sec-icon ic-purple">⚖️</div>
+    <div><div class="sec-title t-purple">LangChain vs Boozo.ai — Side by Side</div><div class="sec-sub">What LangChain provides vs what we built ourselves</div></div>
+  </div>
+
+  <table class="compare">
+    <thead>
+      <tr>
+        <th style="width:30%">Feature</th>
+        <th class="th-lc" style="width:35%">🔗 LangChain</th>
+        <th class="th-us" style="width:35%">✅ Boozo.ai (from scratch)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature">Agent Loop</td>
+        <td class="lc"><code>AgentExecutor.run()</code><br>Hidden internals, hard to debug</td>
+        <td class="us"><code>for iteration in range(5):</code> in <code>agent.py</code><br>Every iteration visible</td>
+      </tr>
+      <tr>
+        <td class="feature">Prompt Template</td>
+        <td class="lc"><code>PromptTemplate</code> class<br>Format defined by LangChain</td>
+        <td class="us">Plain Python f-string in <code>prompts.py</code><br>Full control, edit any word</td>
+      </tr>
+      <tr>
+        <td class="feature">LLM Connection</td>
+        <td class="lc"><code>ChatOpenAI()</code>, <code>ChatGroq()</code><br>Wrapped — hides HTTP details</td>
+        <td class="us"><code>httpx.post(GROQ_URL, ...)</code><br>Direct API call, raw JSON</td>
+      </tr>
+      <tr>
+        <td class="feature">Token Streaming</td>
+        <td class="lc">Callback handlers, complex setup</td>
+        <td class="us"><code>call_groq_stream()</code> — 40 lines<br>Detects "Final Answer:" mid-stream</td>
+      </tr>
+      <tr>
+        <td class="feature">Tool Definition</td>
+        <td class="lc"><code>@tool</code> decorator<br>JSON schema auto-generated</td>
+        <td class="us">Plain Python function + regex parser<br><code>dispatch_tool("web_search(query)")</code></td>
+      </tr>
+      <tr>
+        <td class="feature">LLM Output Parsing</td>
+        <td class="lc"><code>ReActSingleInputOutputParser</code></td>
+        <td class="us"><code>parse_llm_output()</code> — 20 lines of <code>re.search()</code></td>
+      </tr>
+      <tr>
+        <td class="feature">RAG / Vector Store</td>
+        <td class="lc"><code>Chroma.from_documents()</code><br>LangChain manages chunking</td>
+        <td class="us">Direct <code>chromadb.PersistentClient()</code><br>Custom chunking loop in <code>rag_ingest()</code></td>
+      </tr>
+      <tr>
+        <td class="feature">Caching</td>
+        <td class="lc"><code>SQLiteCache</code> or <code>RedisCache</code> built-in</td>
+        <td class="us">Custom <code>cache.py</code> — Redis with graceful fallback</td>
+      </tr>
+      <tr>
+        <td class="feature">Fallback Chain</td>
+        <td class="lc"><code>LLMChain</code> with fallbacks</td>
+        <td class="us">Plain <code>try/except</code> ladder: Groq → Cerebras → Gemini → Ollama</td>
+      </tr>
+      <tr>
+        <td class="feature">Memory</td>
+        <td class="lc"><code>ConversationBufferMemory</code></td>
+        <td class="us">History passed as JSON in request body + Redis <code>remember()</code> tool</td>
+      </tr>
+      <tr>
+        <td class="feature">Rate Limiting</td>
+        <td class="lc">Not included</td>
+        <td class="us">Redis <code>INCR + EXPIRE</code> in <code>cache.py</code>, 30 req/min</td>
+      </tr>
+      <tr>
+        <td class="feature">Streaming to Browser</td>
+        <td class="lc">Requires custom callback + SSE setup</td>
+        <td class="us">Native <code>StreamingResponse</code> + generator in <code>main.py</code></td>
+      </tr>
+      <tr>
+        <td class="feature">Dependencies added</td>
+        <td class="lc">langchain, langchain-core, langchain-community, openai, tiktoken... (~15 packages)</td>
+        <td class="us">httpx, fastapi, redis, chromadb, requests, beautifulsoup4 (~8 packages)</td>
+      </tr>
+      <tr>
+        <td class="feature">Lines of code</td>
+        <td class="lc">~50 lines of config/wiring</td>
+        <td class="us">~600 lines — but every line is yours and readable</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div class="div"><hr></div>
+
+
+<!-- ══ 4. OUR LAYERS ══ -->
+<div class="sec" id="our-layers">
+  <div class="sec-head">
+    <span class="num">04</span>
+    <div class="sec-icon ic-cyan">🏗️</div>
+    <div><div class="sec-title t-cyan">Our Architecture — Every Layer Hand-Built</div><div class="sec-sub">Six files. Zero AI framework dependencies.</div></div>
+  </div>
+
+  <div class="stack">
+    <div class="layer ly-ui">
+      <div class="layer-icon">🖥️</div>
+      <div class="layer-body">
+        <div class="layer-title t-pink">Frontend — index.html</div>
+        <div class="layer-desc">Vanilla JS SSE reader, marked.js Markdown render, DOMPurify sanitiser, Chart.js charts, Google OAuth flow, sidebar history, char counter.</div>
+        <div class="layer-file">static/index.html — 1200 lines of HTML/CSS/JS</div>
+      </div>
+    </div>
+    <div class="layer ly-server">
+      <div class="layer-icon">📦</div>
+      <div class="layer-body">
+        <div class="layer-title t-cyan">API Server — main.py</div>
+        <div class="layer-desc">FastAPI routes, Google OAuth via authlib, session middleware, input validation, Redis rate limiting, SSE StreamingResponse, SQLite history API.</div>
+        <div class="layer-file">main.py — 200 lines</div>
+      </div>
+    </div>
+    <div class="layer ly-agent">
+      <div class="layer-icon">🧠</div>
+      <div class="layer-body">
+        <div class="layer-title t-purple">ReAct Agent — agent.py</div>
+        <div class="layer-desc">Hand-written ReAct loop (max 5 iterations). Direct httpx calls to Groq/Cerebras/Gemini/Ollama. <code>call_groq_stream()</code> for real-time token streaming. Regex-based output parser. Automatic provider fallback chain.</div>
+        <div class="layer-file">agent.py — 250 lines</div>
+      </div>
+    </div>
+    <div class="layer ly-tools">
+      <div class="layer-icon">🛠️</div>
+      <div class="layer-body">
+        <div class="layer-title t-green">Tool Library — tools.py</div>
+        <div class="layer-desc">11 tools written as plain Python functions. Tool dispatcher using <code>re.match()</code> to parse <code>tool_name(argument)</code> from LLM output. No framework schema required.</div>
+        <div class="layer-file">tools.py — 280 lines</div>
+      </div>
+    </div>
+    <div class="layer ly-cache">
+      <div class="layer-icon">⚡</div>
+      <div class="layer-body">
+        <div class="layer-title" style="color:#fca5a5">Redis Cache — cache.py</div>
+        <div class="layer-desc">Custom Redis manager with graceful no-op fallback. Search cache (1h TTL), URL cache (24h), rate limiter (INCR/EXPIRE), persistent user memory (no TTL).</div>
+        <div class="layer-file">cache.py — 120 lines</div>
+      </div>
+    </div>
+    <div class="layer ly-db">
+      <div class="layer-icon">🗃️</div>
+      <div class="layer-body">
+        <div class="layer-title t-amber">Database — db.py</div>
+        <div class="layer-desc">Raw SQLite3 — no ORM. Tables: users, sessions, messages. Functions: upsert_user, create_session, get_messages, add_message, auto_title, rename/delete session.</div>
+        <div class="layer-file">db.py — 120 lines</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hbox bg-cyan">
+    <b>Total: ~1200 lines of Python + ~1200 lines of frontend.</b> Every function has a clear purpose. Every file is readable. There is no magic import that does 10 things invisibly.
+  </div>
+</div>
+<div class="div"><hr></div>
+
+
+<!-- ══ 5. OUR 11 TOOLS ══ -->
+<div class="sec" id="our-tools">
+  <div class="sec-head">
+    <span class="num">05</span>
+    <div class="sec-icon ic-green">🛠️</div>
+    <div><div class="sec-title t-green">Our 11 Tools — All Plain Python Functions</div><div class="sec-sub">No @tool decorator. No JSON schema. Just functions that take a string and return a string.</div></div>
+  </div>
+
+  <div class="code">
+<span class="cm"># How LangChain defines a tool:</span>
+<span class="kw">@tool</span>
+<span class="kw">def</span> <span class="fn">web_search</span>(query: str) -> str:
+    <span class="st">"""Search the web for information."""</span>
+    ...
+
+<span class="cm"># How WE define a tool — identical function, no decorator needed:</span>
+<span class="kw">def</span> <span class="fn">web_search</span>(query: str) -> str:
+    cached = cache.<span class="fn">get_search</span>(query)
+    <span class="kw">if</span> cached: <span class="kw">return</span> cached
+    <span class="cm"># ... scrape DuckDuckGo ...</span>
+
+<span class="cm"># Our dispatcher — 10 lines of regex, no framework:</span>
+TOOLS = {<span class="st">"web_search"</span>: web_search, <span class="st">"code_exec"</span>: code_exec, ...}
+
+<span class="kw">def</span> <span class="fn">dispatch_tool</span>(action_str: str) -> str:
+    match = re.<span class="fn">match</span>(<span class="st">r"(\w+)\((.+)\)"</span>, action_str)
+    tool_name, arg = match.<span class="fn">group</span>(<span class="nu">1</span>), match.<span class="fn">group</span>(<span class="nu">2</span>)
+    <span class="kw">return</span> TOOLS[tool_name](arg)
+  </div>
+
+  <div class="tool-grid">
+    <div class="tool-card">
+      <div class="tool-name t-cyan">web_search()</div>
+      <div class="tool-desc">DuckDuckGo HTML scraping. Redis-cached 1 hour.</div>
+      <div class="tool-impl">requests + BeautifulSoup</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name t-amber">code_exec()</div>
+      <div class="tool-desc">AST-validated Python sandbox. Blocks attribute access. Captures stdout.</div>
+      <div class="tool-impl">ast + exec() + io.StringIO</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name t-green">calculator()</div>
+      <div class="tool-desc">Subprocess-isolated math evaluator. Regex validates operators.</div>
+      <div class="tool-impl">subprocess + sys.executable</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name t-green">rag_ingest()</div>
+      <div class="tool-desc">Ingest URLs or text. URL content Redis-cached 24h. Persistent ChromaDB.</div>
+      <div class="tool-impl">chromadb.PersistentClient</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name t-green">rag_search()</div>
+      <div class="tool-desc">Semantic search over ingested documents. Top-3 results returned.</div>
+      <div class="tool-impl">chromadb + SentenceTransformer</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name t-amber">plot()</div>
+      <div class="tool-desc">Renders bar, line, pie, doughnut, radar charts inline in the chat.</div>
+      <div class="tool-impl">JSON spec → Chart.js in browser</div>
+    </div>
+    <div class="tool-card" style="border-color:rgba(220,38,38,0.3)">
+      <div class="tool-name" style="color:#fca5a5">remember()</div>
+      <div class="tool-desc">Stores a fact in Redis permanently under user's Google ID.</div>
+      <div class="tool-impl">Redis RPUSH — no TTL</div>
+    </div>
+    <div class="tool-card" style="border-color:rgba(220,38,38,0.3)">
+      <div class="tool-name" style="color:#fca5a5">recall()</div>
+      <div class="tool-desc">Retrieves user's stored facts. Filters by topic keywords.</div>
+      <div class="tool-impl">Redis LRANGE + string match</div>
+    </div>
+    <div class="tool-card" style="border-color:rgba(16,185,129,0.4)">
+      <div class="tool-name t-green">datetime_now()</div>
+      <div class="tool-desc">Current date, time, weekday for any timezone. Agent has an accurate clock.</div>
+      <div class="tool-impl">Python zoneinfo + datetime</div>
+    </div>
+    <div class="tool-card" style="border-color:rgba(16,185,129,0.4)">
+      <div class="tool-name t-green">wikipedia_search()</div>
+      <div class="tool-desc">Wikipedia REST API summary. No API key needed.</div>
+      <div class="tool-impl">requests → Wikipedia API</div>
+    </div>
+    <div class="tool-card" style="border-color:rgba(16,185,129,0.4)">
+      <div class="tool-name t-green">get_weather()</div>
+      <div class="tool-desc">Live weather for any city. No API key needed.</div>
+      <div class="tool-impl">requests → wttr.in</div>
+    </div>
+  </div>
+</div>
+<div class="div"><hr></div>
+
+
+<!-- ══ 6. WHY FROM SCRATCH ══ -->
+<div class="sec" id="why">
+  <div class="sec-head">
+    <span class="num">06</span>
+    <div class="sec-icon ic-amber">🎯</div>
+    <div><div class="sec-title t-amber">Why Build From Scratch?</div><div class="sec-sub">The real benefits of not using a framework</div></div>
+  </div>
+
+  <div class="pros-cons">
+    <div class="pc-box" style="border:1.5px solid rgba(16,185,129,0.3)">
+      <div class="pc-title t-green">✅ What we gained</div>
+      <div class="pc-item"><span>🔍</span><span>You can read every line of the agent — no mystery, no magic</span></div>
+      <div class="pc-item"><span>🛠️</span><span>True streaming was 40 lines — no callback workarounds</span></div>
+      <div class="pc-item"><span>⚡</span><span>Redis caching integrated exactly where we needed it</span></div>
+      <div class="pc-item"><span>🔒</span><span>Rate limiting, input validation — added in 10 lines</span></div>
+      <div class="pc-item"><span>📦</span><span>Fewer dependencies — faster installs, fewer version conflicts</span></div>
+      <div class="pc-item"><span>🐛</span><span>When something breaks, the bug is in your code — findable</span></div>
+      <div class="pc-item"><span>🧠</span><span>You actually understand how LLM agents work</span></div>
+    </div>
+    <div class="pc-box" style="border:1.5px solid rgba(239,68,68,0.3)">
+      <div class="pc-title t-red">❌ What we gave up</div>
+      <div class="pc-item"><span>⏱️</span><span>Took longer to build initially</span></div>
+      <div class="pc-item"><span>📚</span><span>No built-in document loaders (PDF, Word, etc.)</span></div>
+      <div class="pc-item"><span>🔌</span><span>No plug-and-play integrations (Slack, Notion, etc.)</span></div>
+      <div class="pc-item"><span>🌐</span><span>No community tool library to pull from</span></div>
+    </div>
+  </div>
+
+  <div class="hbox bg-amber">
+    <b>The bottom line:</b> LangChain is excellent for rapid prototyping. But building from scratch meant every feature we added — Redis caching, true streaming, rate limiting, persistent memory — was exactly as we designed it, not a workaround against framework constraints. And more importantly: you now understand what an AI agent actually is.
+  </div>
+
+  <div class="card" style="border-color:rgba(0,229,255,0.25)">
+    <b>What you actually learned by building this:</b><br><br>
+    — How the ReAct (Reason + Act) pattern works at the code level<br>
+    — How LLMs take a full prompt and predict the next token<br>
+    — How SSE streams events from a server to a browser in real time<br>
+    — How to parse free-form LLM output with regex<br>
+    — How Redis caching, rate limiting, and persistent memory work<br>
+    — How OAuth 2.0 login flow works end to end<br>
+    — How to call Groq / Gemini / Cerebras APIs directly<br>
+    — How to build a vector store RAG pipeline from scratch<br><br>
+    If you had used LangChain, you would know how to configure it — not how any of this works.
+  </div>
+</div>
+
+
+<!-- Back links -->
+<div style="text-align:center;padding:0 20px;margin-top:10px;">
+  <a href="flowchart.html"    style="color:var(--cyan);font-size:.88rem;text-decoration:none;border:1px solid var(--border);padding:10px 22px;border-radius:999px;margin:5px;display:inline-block" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)'">Architecture Flow</a>
+  <a href="api-breakdown.html" style="color:var(--purple);font-size:.88rem;text-decoration:none;border:1px solid var(--border);padding:10px 22px;border-radius:999px;margin:5px;display:inline-block" onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor='var(--border)'">API Breakdown</a>
+  <a href="ai-concepts.html"  style="color:var(--amber);font-size:.88rem;text-decoration:none;border:1px solid var(--border);padding:10px 22px;border-radius:999px;margin:5px;display:inline-block" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='var(--border)'">AI Concepts</a>
+  <a href="/"                 style="color:var(--green);font-size:.88rem;text-decoration:none;border:1px solid var(--border);padding:10px 22px;border-radius:999px;margin:5px;display:inline-block" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'">Back to Boozo.ai</a>
+</div>
+
+<script>
+  const obs = new IntersectionObserver(e=>{
+    e.forEach(x=>{ if(x.isIntersecting) x.target.classList.add('on'); });
+  },{threshold:.07});
+  document.querySelectorAll('.sec').forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>

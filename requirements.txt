@@ -11,6 +11,10 @@ httpx>=0.27
 # Environment variable loading
 python-dotenv>=1.0
 
+# Google OAuth + session middleware
+authlib>=1.3
+itsdangerous>=2.1
+
 # HTML scraping (web_search tool)
 requests>=2.32
 beautifulsoup4>=4.12
@@ -18,3 +22,6 @@ beautifulsoup4>=4.12
 # RAG — vector store + embeddings
 chromadb>=1.5
 sentence-transformers>=3.0
+
+# Redis — caching, rate limiting, persistent user memory
+redis>=5.0

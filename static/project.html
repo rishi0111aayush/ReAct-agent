@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Boozo.ai — Complete Project Deep Dive</title>
+<style>
+  :root {
+    --bg:      #0a0a0f;
+    --panel:   #0f0f1a;
+    --border:  #1e1e3a;
+    --accent:  #7c3aed;
+    --accent2: #06b6d4;
+    --accent3: #10b981;
+    --accent4: #f59e0b;
+    --accent5: #ef4444;
+    --text:    #e2e8f0;
+    --muted:   #64748b;
+    --code-bg: #0d0d1f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ── nav ── */
+  nav {
+    background: rgba(10,10,15,0.95);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  nav .logo { font-weight: 800; font-size: 1.1rem; color: var(--accent); letter-spacing: -0.5px; }
+  nav a { color: var(--muted); text-decoration: none; font-size: 0.85rem; transition: color .2s; }
+  nav a:hover { color: var(--text); }
+  nav .badge {
+    margin-left: auto;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── hero ── */
+  .hero {
+    text-align: center;
+    padding: 80px 24px 60px;
+    background: radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.18) 0%, transparent 70%);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero h1 {
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, #fff 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+    letter-spacing: -1.5px;
+  }
+  .hero p { color: var(--muted); font-size: 1.1rem; max-width: 640px; margin: 0 auto 28px; }
+  .hero-tags { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .tag {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── layout ── */
+  .container { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+  .section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+  .section-num {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .section h2 {
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 12px;
+  }
+  .section .lead {
+    color: var(--muted);
+    font-size: 1rem;
+    margin-bottom: 36px;
+    max-width: 700px;
+  }
+
+  /* ── arch diagram ── */
+  .arch {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .arch-row {
+    display: flex;
+    align-items: stretch;
+  }
+  .arch-label {
+    width: 120px;
+    flex-shrink: 0;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 14px 16px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    color: var(--muted);
+  }
+  .arch-content {
+    flex: 1;
+    background: var(--code-bg);
+    padding: 14px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .arch-chip {
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid;
+  }
+  .c-purple  { background: rgba(124,58,237,0.15); border-color: rgba(124,58,237,0.4); color: #a78bfa; }
+  .c-cyan    { background: rgba(6,182,212,0.12);  border-color: rgba(6,182,212,0.35); color: #67e8f9; }
+  .c-green   { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.35); color: #6ee7b7; }
+  .c-amber   { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.35); color: #fcd34d; }
+  .c-red     { background: rgba(239,68,68,0.12);  border-color: rgba(239,68,68,0.35);  color: #fca5a5; }
+  .c-blue    { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.35); color: #93c5fd; }
+
+  /* ── code block ── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.65;
+    margin: 16px 0;
+  }
+  .kw   { color: #c792ea; }
+  .fn   { color: #82aaff; }
+  .str  { color: #c3e88d; }
+  .cmt  { color: #546e7a; font-style: italic; }
+  .num  { color: #f78c6c; }
+  .cls  { color: #ffcb6b; }
+  .op   { color: #89ddff; }
+
+  /* ── cards grid ── */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin: 24px 0; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    transition: border-color .2s, transform .2s;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .card-icon { font-size: 1.6rem; margin-bottom: 10px; }
+  .card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+  .card p  { font-size: 0.83rem; color: var(--muted); line-height: 1.55; }
+  .card .card-tag { font-size: 0.72rem; font-weight: 700; color: var(--accent2); margin-bottom: 6px; letter-spacing: 0.5px; }
+
+  /* ── info box ── */
+  .info-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 12px 12px 0;
+    padding: 18px 22px;
+    margin: 20px 0;
+    font-size: 0.9rem;
+  }
+  .info-box.green  { border-left-color: var(--accent3); }
+  .info-box.amber  { border-left-color: var(--accent4); }
+  .info-box.cyan   { border-left-color: var(--accent2); }
+  .info-box.red    { border-left-color: var(--accent5); }
+  .info-box strong { color: #fff; }
+
+  /* ── step list ── */
+  .steps { list-style: none; margin: 24px 0; }
+  .steps li {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+  .steps li:last-child { border-bottom: none; }
+  .step-n {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #fff;
+  }
+  .steps li .step-body h5 { font-size: 0.92rem; font-weight: 700; margin-bottom: 4px; }
+  .steps li .step-body p  { font-size: 0.84rem; color: var(--muted); }
+
+  /* ── two col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── flow trace ── */
+  .trace {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 20px 0;
+  }
+  .trace-header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .trace-row {
+    display: flex;
+    border-bottom: 1px solid rgba(30,30,58,0.5);
+    font-size: 0.82rem;
+    font-family: monospace;
+  }
+  .trace-row:last-child { border-bottom: none; }
+  .trace-time { width: 70px; flex-shrink: 0; padding: 10px 16px; color: var(--accent4); }
+  .trace-who  { width: 120px; flex-shrink: 0; padding: 10px 0; font-weight: 700; }
+  .trace-what { padding: 10px 16px 10px 0; color: var(--muted); flex: 1; }
+  .trace-who.fe  { color: #a78bfa; }
+  .trace-who.srv { color: #67e8f9; }
+  .trace-who.ag  { color: #6ee7b7; }
+  .trace-who.llm { color: #fcd34d; }
+  .trace-who.tool{ color: #fca5a5; }
+  .trace-who.redis{ color: #93c5fd; }
+
+  /* ── table ── */
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.85rem; }
+  th {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  td {
+    border: 1px solid var(--border);
+    padding: 10px 16px;
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  tr:nth-child(even) td { background: rgba(15,15,26,0.5); }
+  td code, th code {
+    background: rgba(124,58,237,0.15);
+    color: #a78bfa;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: monospace;
+  }
+
+  /* ── inline code ── */
+  p code, li code {
+    background: rgba(124,58,237,0.15);
+    color: #a78bfa;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-family: monospace;
+  }
+
+  h3 { font-size: 1.2rem; font-weight: 700; margin: 32px 0 12px; }
+  h4 { font-size: 1rem; font-weight: 700; margin: 20px 0 8px; color: var(--accent2); }
+  p  { margin-bottom: 12px; }
+  ul, ol { padding-left: 20px; margin-bottom: 12px; }
+  li { margin-bottom: 6px; font-size: 0.9rem; color: var(--muted); }
+  li strong { color: var(--text); }
+
+  /* ── markdown example ── */
+  .md-demo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 20px 0;
+  }
+  .md-demo > div { padding: 20px; }
+  .md-demo .raw  { background: var(--code-bg); border-right: 1px solid var(--border); }
+  .md-demo .rendered { background: var(--panel); }
+  .md-demo h5 { font-size: 0.72rem; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  .md-demo pre { margin: 0; border: none; padding: 0; background: transparent; font-size: 0.8rem; }
+  .md-rendered h2 { font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 10px; }
+  .md-rendered ul { padding-left: 18px; }
+  .md-rendered li { color: var(--text); font-size: 0.85rem; }
+  .md-rendered code { background: rgba(124,58,237,0.2); color: #c792ea; padding: 1px 5px; border-radius: 3px; font-size: 0.85em; }
+  .md-rendered strong { color: #fff; }
+  @media (max-width: 600px) { .md-demo { grid-template-columns: 1fr; } .md-demo .raw { border-right: none; border-bottom: 1px solid var(--border); } }
+
+  /* ── tool grid ── */
+  .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 14px; margin: 24px 0; }
+  .tool-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .tool-card:hover { border-color: var(--accent2); }
+  .tool-name { font-size: 0.82rem; font-family: monospace; font-weight: 700; color: var(--accent2); margin-bottom: 6px; }
+  .tool-desc { font-size: 0.82rem; color: var(--muted); margin-bottom: 10px; }
+  .tool-example { background: var(--code-bg); border-radius: 6px; padding: 8px 12px; font-size: 0.78rem; font-family: monospace; color: #c3e88d; line-height: 1.6; }
+
+  /* ── footer ── */
+  footer {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="logo">Boozo.ai</span>
+  <a href="/">Home</a>
+  <a href="/static/flowchart.html">Flowchart</a>
+  <a href="/static/api-breakdown.html">API</a>
+  <a href="/static/no-langchain.html">No LangChain</a>
+  <span class="badge">DEEP DIVE</span>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>How Boozo.ai Works</h1>
+  <p>A complete, beginner-friendly explanation of every file, every concept, and every line that makes this AI assistant tick — with real examples from the actual code.</p>
+  <div class="hero-tags">
+    <span class="tag">FastAPI</span>
+    <span class="tag">ReAct Agent</span>
+    <span class="tag">Groq / Gemini / Cerebras</span>
+    <span class="tag">Redis</span>
+    <span class="tag">SQLite</span>
+    <span class="tag">ChromaDB</span>
+    <span class="tag">Google OAuth</span>
+    <span class="tag">SSE Streaming</span>
+    <span class="tag">Markdown Rendering</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 01 ═══════════════ -->
+<div class="section">
+<div class="container">
+  <div class="section-num">Section 01</div>
+  <h2>The Big Picture — Architecture</h2>
+  <p class="lead">Boozo.ai is a 7-layer system. Each layer has one job. They talk to each other in a clean chain.</p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-label">Frontend</div>
+      <div class="arch-content">
+        <span class="arch-chip c-purple">index.html</span>
+        <span class="arch-chip c-purple">Textarea + Send</span>
+        <span class="arch-chip c-purple">SSE EventSource</span>
+        <span class="arch-chip c-purple">marked.js Markdown</span>
+        <span class="arch-chip c-purple">Chart.js</span>
+      </div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-label">Server</div>
+      <div class="arch-content">
+        <span class="arch-chip c-cyan">main.py</span>
+        <span class="arch-chip c-cyan">FastAPI</span>
+        <span class="arch-chip c-cyan">Google OAuth</span>
+        <span class="arch-chip c-cyan">Rate Limiting</span>
+        <span class="arch-chip c-cyan">Session Cookie</span>
+      </div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-label">Agent</div>
+      <div class="arch-content">
+        <span class="arch-chip c-green">agent.py</span>
+        <span class="arch-chip c-green">ReAct Loop</span>
+        <span class="arch-chip c-green">LLM Routing</span>
+        <span class="arch-chip c-green">Token Streaming</span>
+        <span class="arch-chip c-green">parse_llm_output()</span>
+      </div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-label">Prompts</div>
+      <div class="arch-content">
+        <span class="arch-chip c-amber">prompts.py</span>
+        <span class="arch-chip c-amber">SYSTEM_PROMPT</span>
+        <span class="arch-chip c-amber">REACT_TEMPLATE</span>
+      </div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-label">Tools</div>
+      <div class="arch-content">
+        <span class="arch-chip c-red">tools.py</span>
+        <span class="arch-chip c-red">web_search</span>
+        <span class="arch-chip c-red">code_exec</span>
+        <span class="arch-chip c-red">calculator</span>
+        <span class="arch-chip c-red">rag_ingest/search</span>
+        <span class="arch-chip c-red">plot</span>
+        <span class="arch-chip c-red">remember/recall</span>
+        <span class="arch-chip c-red">datetime_now</span>
+        <span class="arch-chip c-red">wikipedia</span>
+        <span class="arch-chip c-red">weather</span>
+      </div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-label">Cache</div>
+      <div class="arch-content">
+        <span class="arch-chip c-blue">cache.py</span>
+        <span class="arch-chip c-blue">Redis</span>
+        <span class="arch-chip c-blue">Search Cache 1h</span>
+        <span class="arch-chip c-blue">URL Cache 24h</span>
+        <span class="arch-chip c-blue">User Memory</span>
+        <span class="arch-chip c-blue">Rate Limiting</span>
+      </div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-label">Database</div>
+      <div class="arch-content">
+        <span class="arch-chip c-purple">db.py</span>
+        <span class="arch-chip c-purple">SQLite</span>
+        <span class="arch-chip c-purple">users table</span>
+        <span class="arch-chip c-purple">sessions table</span>
+        <span class="arch-chip c-purple">messages table</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box cyan">
+    <strong>Simple analogy:</strong> Think of Boozo.ai like a smart office. The <strong>Frontend</strong> is the reception desk where you talk. The <strong>Server</strong> is the security guard who checks your ID. The <strong>Agent</strong> is the chief analyst who thinks. The <strong>Tools</strong> are assistants who go fetch specific information. <strong>Redis</strong> is the sticky-note board for quick memory. <strong>SQLite</strong> is the filing cabinet for permanent records.
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 02 ═══════════════ -->
+<div class="section">
+<div class="container">
+  <div class="section-num">Section 02</div>
+  <h2>Frontend — <code>static/index.html</code></h2>
+  <p class="lead">This is the page you see in the browser. It is a single HTML file that handles everything the user touches.</p>
+
+  <h3>What it does</h3>
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">💬</div>
+      <div class="card-tag">INPUT</div>
+      <h4>Chat Textarea</h4>
+      <p>A textarea where you type. It auto-grows as you type more. It shows a character counter (<code>1234 / 4000</code>). Send button disables if empty or over limit.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📡</div>
+      <div class="card-tag">NETWORKING</div>
+      <h4>SSE EventSource</h4>
+      <p>When you click Send, the frontend opens a streaming connection to <code>POST /chat</code>. The server sends back pieces of the answer as they are generated — like watching someone type in real time.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">✨</div>
+      <div class="card-tag">RENDERING</div>
+      <h4>Markdown Rendering</h4>
+      <p>Raw text from the AI (like <code>**bold**</code> or code blocks) is converted to beautiful HTML using <code>marked.js</code> and sanitized with <code>DOMPurify</code>.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📊</div>
+      <div class="card-tag">CHARTS</div>
+      <h4>Chart.js Charts</h4>
+      <p>When the agent uses the <code>plot</code> tool, it sends a JSON spec. The frontend renders it as an interactive bar/line/pie chart inside the chat.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔐</div>
+      <div class="card-tag">AUTH</div>
+      <h4>Google Login UI</h4>
+      <p>Shows a "Sign in with Google" button. After login, shows your avatar and name. Session history sidebar appears only when logged in.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📜</div>
+      <div class="card-tag">HISTORY</div>
+      <h4>Session Sidebar</h4>
+      <p>Lists all your past chat sessions. Click one to load all previous messages. Sessions are auto-named from your first message.</p>
+    </div>
+  </div>
+
+  <h3>How SSE Streaming Works</h3>
+  <p>Normal HTTP: you ask, server replies, connection closes. SSE (Server-Sent Events): connection stays open, server sends data in chunks as they become available.</p>
+
+  <pre><span class="cmt">// Frontend JavaScript — simplified</span>
+<span class="kw">async function</span> <span class="fn">sendMessage</span>() {
+  <span class="kw">const</span> response = <span class="kw">await</span> fetch(<span class="str">'/chat'</span>, {
+    method: <span class="str">'POST'</span>,
+    body: JSON.stringify({ message: <span class="str">"What is Python?"</span> })
+  });
+
+  <span class="kw">const</span> reader = response.body.getReader();  <span class="cmt">// open streaming reader</span>
+  <span class="kw">let</span> answer = <span class="str">''</span>;
+
+  <span class="kw">while</span> (<span class="kw">true</span>) {
+    <span class="kw">const</span> { value, done } = <span class="kw">await</span> reader.read();
+    <span class="kw">if</span> (done) <span class="kw">break</span>;
+
+    <span class="kw">const</span> text = <span class="kw">new</span> TextDecoder().decode(value);
+    <span class="kw">const</span> event = JSON.parse(text.replace(<span class="str">'data: '</span>, <span class="str">''</span>));
+
+    <span class="kw">if</span> (event.type === <span class="str">'answer_token'</span>) {
+      answer += event.content;        <span class="cmt">// accumulate tokens</span>
+      showInChat(answer);             <span class="cmt">// render incrementally</span>
+    }
+    <span class="kw">if</span> (event.type === <span class="str">'done'</span>) <span class="kw">break</span>;
+  }
+}</pre>
+
+  <div class="info-box amber">
+    <strong>Key variable:</strong> <code>window._chatHistory</code> — stores the conversation history array. Uses <code>window._chatHistory</code> (not <code>let history</code>) because multiple <code>&lt;script&gt;</code> blocks in HTML each have their own scope. Using <code>window.</code> makes it truly global across all script blocks.
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 03 ═══════════════ -->
+<div class="section">
+<div class="container">
+  <div class="section-num">Section 03</div>
+  <h2>Server — <code>main.py</code> (FastAPI)</h2>
+  <p class="lead">FastAPI is the web framework — it receives HTTP requests and sends responses. Think of it as the post office that routes letters to the right department.</p>
+
+  <h3>All Routes</h3>
+  <table>
+    <tr><th>Method</th><th>Path</th><th>What it does</th><th>Auth needed?</th></tr>
+    <tr><td><code>GET</code></td><td><code>/</code></td><td>Serves the main chat UI (index.html)</td><td>No</td></tr>
+    <tr><td><code>GET</code></td><td><code>/health</code></td><td>Returns <code>{"status":"ok"}</code> — for uptime monitoring</td><td>No</td></tr>
+    <tr><td><code>GET</code></td><td><code>/auth/google</code></td><td>Redirects browser to Google login page</td><td>No</td></tr>
+    <tr><td><code>GET</code></td><td><code>/auth/callback</code></td><td>Google redirects back here after login; saves user to DB, sets cookie</td><td>No</td></tr>
+    <tr><td><code>GET</code></td><td><code>/auth/me</code></td><td>Returns current user info or 401</td><td>No (returns null)</td></tr>
+    <tr><td><code>POST</code></td><td><code>/auth/logout</code></td><td>Clears session cookie</td><td>No</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/sessions</code></td><td>List all chat sessions for current user</td><td>Yes</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/sessions</code></td><td>Create a new empty chat session</td><td>Yes</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/sessions/{id}</code></td><td>Load all messages in a session</td><td>Yes</td></tr>
+    <tr><td><code>PATCH</code></td><td><code>/api/sessions/{id}</code></td><td>Rename a session</td><td>Yes</td></tr>
+    <tr><td><code>DELETE</code></td><td><code>/api/sessions/{id}</code></td><td>Delete a session and all its messages</td><td>Yes</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/sessions/{id}/message</code></td><td>Save a message to history + auto-title session</td><td>Yes</td></tr>
+    <tr><td><code>POST</code></td><td><code>/chat</code></td><td>The main chat endpoint — runs the ReAct agent and streams tokens</td><td>Optional</td></tr>
+  </table>
+
+  <h3>The Chat Endpoint — Step by Step</h3>
+  <pre><span class="kw">@app</span>.post(<span class="str">"/chat"</span>)
+<span class="kw">def</span> <span class="fn">chat</span>(req: ChatRequest, request: Request):
+
+    <span class="cmt"># Step 1: Validate the message</span>
+    <span class="kw">if</span> len(req.message.strip()) == <span class="num">0</span>:
+        <span class="kw">raise</span> <span class="cls">HTTPException</span>(status_code=<span class="num">400</span>, detail=<span class="str">"Message cannot be empty."</span>)
+    <span class="kw">if</span> len(req.message) > <span class="num">4000</span>:
+        <span class="kw">raise</span> <span class="cls">HTTPException</span>(status_code=<span class="num">400</span>, detail=<span class="str">"Message too long."</span>)
+
+    <span class="cmt"># Step 2: Check rate limit (30 requests/minute per user)</span>
+    user   = current_user(request)
+    rl_key = user[<span class="str">"id"</span>] <span class="kw">if</span> user <span class="kw">else</span> request.client.host
+    allowed, count = cache.check_rate_limit(rl_key)
+    <span class="kw">if not</span> allowed:
+        <span class="kw">raise</span> <span class="cls">HTTPException</span>(status_code=<span class="num">429</span>, detail=<span class="str">f"Rate limit exceeded ({count}/min)"</span>)
+
+    <span class="cmt"># Step 3: Stream the agent response</span>
+    <span class="kw">def</span> <span class="fn">event_stream</span>():
+        <span class="kw">for</span> event <span class="kw">in</span> run_agent(req.message, req.history, ...):
+            <span class="kw">yield</span> <span class="str">f"data: {json.dumps(event)}\n\n"</span>
+
+    <span class="kw">return</span> <span class="cls">StreamingResponse</span>(event_stream(), media_type=<span class="str">"text/event-stream"</span>)</pre>
+
+  <h3>Google OAuth — How Login Works</h3>
+  <ul class="steps">
+    <li>
+      <div class="step-n">1</div>
+      <div class="step-body">
+        <h5>User clicks "Sign in with Google"</h5>
+        <p>Browser navigates to <code>GET /auth/google</code>. Server redirects to <code>accounts.google.com</code> with your app's <code>client_id</code>.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-n">2</div>
+      <div class="step-body">
+        <h5>User approves on Google's page</h5>
+        <p>Google authenticates the user and redirects back to <code>GET /auth/callback?code=xyz</code>.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-n">3</div>
+      <div class="step-body">
+        <h5>Server exchanges the code for user info</h5>
+        <p><code>authlib</code> calls Google's API using the code. Gets back: <code>email</code>, <code>name</code>, <code>picture</code>, <code>sub</code> (Google's unique user ID).</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-n">4</div>
+      <div class="step-body">
+        <h5>User saved to SQLite, cookie set</h5>
+        <p><code>db.upsert_user()</code> creates or updates the user record. <code>request.session["user_id"] = google_id</code> sets an encrypted cookie valid for 30 days.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-n">5</div>
+      <div class="step-body">
+        <h5>Every future request is identified</h5>
+        <p>The browser sends the cookie automatically. <code>current_user(request)</code> reads <code>request.session["user_id"]</code> and looks up the DB.</p>
+      </div>
+    </li>
+  </ul>
+
+  <div class="info-box">
+    <strong>Rate Limiting:</strong> Without Redis — every user can send max <strong>30 messages per minute</strong>. If they exceed this, they get HTTP 429. Logged-in users are tracked by their Google ID. Anonymous users are tracked by their IP address.
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 04 ═══════════════ -->
+<div class="section">
+<div class="container">
+  <div class="section-num">Section 04</div>
+  <h2>Agent — <code>agent.py</code> (The Brain)</h2>
+  <p class="lead">This is the most important file. It implements the ReAct (Reason + Act) pattern — a loop where the AI thinks, uses a tool, observes the result, thinks again, and repeats until it has a final answer.</p>
+
+  <h3>What is ReAct?</h3>
+  <p>ReAct stands for <strong>Reason</strong> and <strong>Act</strong>. It is a technique where instead of having the AI answer immediately, you force it to show its thinking step by step:</p>
+
+  <pre><span class="cmt"># Example: User asks "What is the weather in Paris and plot it?"</span>
+
+<span class="op">Thought:</span> I need to get the weather for Paris first.
+<span class="op">Action:</span> get_weather(Paris)
+<span class="op">Observation:</span> Paris: Partly cloudy +18°C, Wind: 12 km/h, Humidity: 65%
+
+<span class="op">Thought:</span> I have the data. Now I should plot it as a chart.
+<span class="op">Action:</span> plot({"type":"bar","title":"Paris Weather","labels":["Temp°C","Wind km/h","Humidity%"],"datasets":[{"label":"Value","data":[18,12,65]}]})
+<span class="op">Observation:</span> CHART:{...json...}
+
+<span class="op">Thought:</span> I have both the weather data and the chart rendered.
+<span class="op">Final Answer:</span> Here is the current weather in Paris...</pre>
+
+  <h3>The ReAct Loop in Code</h3>
+  <pre><span class="kw">def</span> <span class="fn">run_agent</span>(user_message, history, image, image_mime, selected_model, user_id):
+    <span class="kw">for</span> iteration <span class="kw">in</span> <span class="fn">range</span>(<span class="num">5</span>):    <span class="cmt"># max 5 iterations</span>
+
+        <span class="cmt"># Build the full prompt (system + history + user + scratchpad)</span>
+        prompt = REACT_TEMPLATE.format(...)
+
+        <span class="cmt"># Ask the LLM</span>
+        llm_output = call_groq_stream(prompt)   <span class="cmt"># streams tokens in real time</span>
+
+        <span class="cmt"># Parse what the LLM said</span>
+        parsed = parse_llm_output(llm_output)
+        <span class="cmt"># parsed = { thought: "...", action: "get_weather(Paris)", final_answer: None }</span>
+
+        <span class="kw">if</span> parsed[<span class="str">"final_answer"</span>]:
+            <span class="kw">yield</span> {<span class="str">"type"</span>: <span class="str">"done"</span>, <span class="str">"content"</span>: parsed[<span class="str">"final_answer"</span>]}
+            <span class="kw">return</span>                      <span class="cmt"># stop the loop</span>
+
+        <span class="kw">if</span> parsed[<span class="str">"action"</span>]:
+            <span class="cmt"># Run the tool (e.g. get_weather("Paris"))</span>
+            observation = dispatch_tool(parsed[<span class="str">"action"</span>])
+            scratchpad += <span class="str">f"Observation: {observation}\n\n"</span>
+            <span class="cmt"># Loop again — LLM sees the observation next iteration</span></pre>
+
+  <h3>LLM Providers — Fallback Chain</h3>
+  <p>The agent tries LLM providers in order. If one fails (quota exceeded, server error), it silently moves to the next:</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-tag">PRIMARY</div>
+      <h4>Groq — llama-3.3-70b</h4>
+      <p>Extremely fast inference. Supports token streaming. Used for vision too (Llama 4 Scout). Free tier available.</p>
+    </div>
+    <div class="card">
+      <div class="card-tag">FALLBACK 1</div>
+      <h4>Cerebras — llama-3.3-70b</h4>
+      <p>Wafer-scale chip inference. Very fast. OpenAI-compatible API. Good free tier.</p>
+    </div>
+    <div class="card">
+      <div class="card-tag">FALLBACK 2</div>
+      <h4>Gemini — gemini-2.0-flash</h4>
+      <p>Google's model. Large context window. Strong reasoning. Via OpenAI-compatible endpoint.</p>
+    </div>
+    <div class="card">
+      <div class="card-tag">FALLBACK 3</div>
+      <h4>Ollama — local llama3.2</h4>
+      <p>Runs on your own machine. Works offline. Slower but zero cost, zero data sharing.</p>
+    </div>
+  </div>
+
+  <h3>Token Streaming Explained</h3>
+  <p>When using Groq, the response is streamed token by token (a token is roughly 4 characters). This is how the text appears to "type itself" in the UI:</p>
+  <pre><span class="kw">def</span> <span class="fn">call_groq_stream</span>(prompt):
+    payload = {<span class="str">"stream"</span>: <span class="cls">True</span>, ...}    <span class="cmt"># tell Groq to stream</span>
+
+    <span class="kw">with</span> httpx.stream(<span class="str">"POST"</span>, GROQ_URL, json=payload) <span class="kw">as</span> resp:
+        <span class="kw">for</span> line <span class="kw">in</span> resp.iter_lines():
+            <span class="cmt"># Each line looks like:  data: {"choices":[{"delta":{"content":"The"}}]}</span>
+            token = parse(line)[<span class="str">"delta"</span>][<span class="str">"content"</span>]
+            <span class="kw">yield</span> token   <span class="cmt"># "The" → "ure" → "is" → " a" → " concept..."</span></pre>
+
+  <div class="info-box green">
+    <strong>Scratchpad:</strong> As the loop runs, a <code>scratchpad</code> string accumulates all Thoughts, Actions, and Observations. This is appended to the next prompt so the LLM "remembers" what it already tried. After 5 iterations, the agent gives up and returns an error.
+  </div>
+
+  <h3>parse_llm_output() — Reading the LLM's Mind</h3>
+  <p>The LLM returns plain text. This function uses <strong>regex</strong> to extract the three possible parts:</p>
+  <pre><span class="kw">def</span> <span class="fn">parse_llm_output</span>(text):
+    <span class="cmt"># Regex to find "Thought: ..." up until "Action:" or "Final Answer:"</span>
+    thought_match = re.search(<span class="str">r'Thought:\s*(.+?)(?=Action:|Final Answer:|$)'</span>, text, re.DOTALL)
+    action_match  = re.search(<span class="str">r'Action:\s*(.+?)(?=Thought:|Observation:|Final Answer:|$)'</span>, text, re.DOTALL)
+    answer_match  = re.search(<span class="str">r'Final Answer:\s*(.+)'</span>, text, re.DOTALL)
+
+    <span class="kw">return</span> {
+        <span class="str">"thought"</span>:      thought_match.group(<span class="num">1</span>).strip() <span class="kw">if</span> thought_match <span class="kw">else</span> <span class="cls">None</span>,
+        <span class="str">"action"</span>:       action_match.group(<span class="num">1</span>).strip()  <span class="kw">if</span> action_match  <span class="kw">else</span> <span class="cls">None</span>,
+        <span class="str">"final_answer"</span>: answer_match.group(<span class="num">1</span>).strip()  <span class="kw">if</span> answer_match  <span class="kw">else</span> <span class="cls">None</span>,
+    }</pre>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 05 ═══════════════ -->
+<div class="section">
+<div class="container">
+  <div class="section-num">Section 05</div>
+  <h2>Prompts — <code>prompts.py</code></h2>
+  <p class="lead">Prompts are the instructions you give the AI to control how it behaves. Without a good prompt, the AI would not know it should use tools, or how to format its response.</p>
+
+  <h3>SYSTEM_PROMPT — The AI's Job Description</h3>
+  <p>This is sent to the LLM at the start of every request. It defines:</p>
+  <ul>
+    <li><strong>Identity:</strong> "You are Boozo.ai, an expert AI assistant..."</li>
+    <li><strong>Tool list:</strong> Every tool's name, signature, and when to use it</li>
+    <li><strong>Response format:</strong> Must use Thought → Action → Final Answer structure</li>
+    <li><strong>Rules:</strong> Always start with Thought, never skip it, etc.</li>
+  </ul>
+
+  <div class="info-box amber">
+    <strong>Why does format matter?</strong> If the prompt doesn't specify the exact format, the LLM might write <code>I will search for this:</code> instead of <code>Action: web_search(...)</code>. The regex parser (<code>parse_llm_output</code>) would then fail to find the action. A strict format in the prompt = reliable parsing.
+  </div>
+
+  <h3>REACT_TEMPLATE — The Full Prompt Builder</h3>
+  <pre><span class="cmt"># prompts.py</span>
+REACT_TEMPLATE = <span class="str">"""{system}
+
+Conversation so far:
+{history}
+
+User: {user_message}
+
+{scratchpad}"""</span>
+
+<span class="cmt"># Used in agent.py like this:</span>
+prompt = REACT_TEMPLATE.format(
+    system=SYSTEM_PROMPT,         <span class="cmt"># all the tool docs + rules</span>
+    history=history_str,          <span class="cmt"># previous turns: "User: hi\nAssistant: hello"</span>
+    user_message=<span class="str">"What is 2+2?"</span>, <span class="cmt"># current question</span>
+    scratchpad=scratchpad,        <span class="cmt"># Thought/Action/Observation from this loop</span>
+)</pre>
+
+  <h3>Real Example of a Full Prompt</h3>
+  <pre><span class="cmt">You are Boozo.ai, an expert AI assistant...
+[all tool definitions]
+
+Conversation so far:
+User: Hi!
+Assistant: Hello! How can I help you?
+
+User: What is the weather in Mumbai?
+
+Thought: I need to get the weather for Mumbai.
+Action: get_weather(Mumbai)
+Observation: Mumbai: Partly cloudy +32°C</span>
+
+<span class="cmt"># ↑ The LLM now sees all of this and generates the next Thought</span></pre>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 06 ═══════════════ -->
+<div class="section">
+<div class="container">
+  <div class="section-num">Section 06</div>
+  <h2>Tools — <code>tools.py</code> (The Agent's Hands)</h2>
+  <p class="lead">Tools are functions the AI can call to interact with the real world — search the internet, run code, check the weather, remember things. Without tools, the AI can only use its training data.</p>
+
+  <div class="tool-grid">
+    <div class="tool-card">
+      <div class="tool-name">web_search(query)</div>
+      <div class="tool-desc">Searches DuckDuckGo and returns top 4 results. Results are cached in Redis for 1 hour — if you ask the same thing twice, second request is instant.</div>
+      <div class="tool-example">web_search("Python 3.13 new features")
+→ "- What's new in 3.13: Python 3.13 ships..."</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">code_exec(code)</div>
+      <div class="tool-desc">Runs Python code in a <strong>sandbox</strong>. Only safe built-ins allowed (print, range, len, math). No file access, no imports, no attribute access. Output captured from stdout.</div>
+      <div class="tool-example">code_exec("print(sum([1,2,3,4,5]))")
+→ "15"</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">calculator(expr)</div>
+      <div class="tool-desc">Evaluates math expressions in a completely isolated subprocess — even safer than code_exec. Regex validates only math operators allowed first.</div>
+      <div class="tool-example">calculator("(15 ** 2 + 144) ** 0.5")
+→ "17.69"</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">rag_ingest(source)</div>
+      <div class="tool-desc">Ingests a URL or raw text into ChromaDB (vector database). Splits text into 300-char chunks with 50-char overlap. URL content is Redis-cached for 24h.</div>
+      <div class="tool-example">rag_ingest("https://docs.python.org/3/")
+→ "Ingested 142 chunks from docs..."</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">rag_search(query)</div>
+      <div class="tool-desc">Semantic search over the ChromaDB knowledge base. Uses sentence embeddings to find chunks similar in meaning, not just keyword matches.</div>
+      <div class="tool-example">rag_search("how does garbage collection work")
+→ "[source: docs.python.org] CPython uses..."</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">plot(json_spec)</div>
+      <div class="tool-desc">Renders an interactive Chart.js chart in the chat. Returns a special <code>CHART:{json}</code> string — the frontend detects this prefix and renders the chart.</div>
+      <div class="tool-example">plot({"type":"pie","title":"Languages","labels":["Python","JS"],"datasets":[{"data":[60,40]}]})
+→ CHART:{"type":"pie",...}</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">remember(fact)</div>
+      <div class="tool-desc">Stores a fact in per-user Redis memory. Survives server restarts and new chat sessions. Requires login (uses Google ID as key).</div>
+      <div class="tool-example">remember("User prefers dark mode")
+→ "Remembered: User prefers dark mode"</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">recall(topic)</div>
+      <div class="tool-desc">Retrieves stored facts relevant to a topic. Filters by keyword match, falls back to last 10 facts if no matches. Requires login.</div>
+      <div class="tool-example">recall("preferences")
+→ "Memories:\n- User prefers dark mode\n- User uses Python"</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">datetime_now(tz)</div>
+      <div class="tool-desc">Returns current date, time, and weekday in any timezone. AI always uses this before answering "what day is it?" questions.</div>
+      <div class="tool-example">datetime_now("Asia/Kolkata")
+→ "Friday, 04 July 2025 — 14:32:17 Asia/Kolkata"</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">wikipedia_search(query)</div>
+      <div class="tool-desc">Fetches Wikipedia's REST API summary for a topic. Gets the opening paragraph — fast, reliable, no scraping needed.</div>
+      <div class="tool-example">wikipedia_search("Dijkstra's algorithm")
+→ "**Dijkstra's algorithm** is an algorithm for finding the shortest paths..."</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">get_weather(city)</div>
+      <div class="tool-desc">Uses wttr.in (free, no API key). Returns temperature, conditions, wind, humidity in a single line. Works for any city in the world.</div>
+      <div class="tool-example">get_weather("Tokyo")
+→ "Tokyo: Sunny +28°C ↑ Wind: 8km/h Humidity: 70%"</div>
+    </div>
+  </div>
+
+  <h3>How dispatch_tool() Works</h3>
+  <p>When the LLM writes <code>Action: web_search("AI news")</code>, this function parses that string and calls the right function:</p>
+  <pre><span class="kw">def</span> <span class="fn">dispatch_tool</span>(action_str: str) -> str:
+    <span class="cmt"># Input: 'web_search("AI news")'</span>
+    match = re.match(<span class="str">r"(\w+)\((.+)\)"</span>, action_str.strip(), re.DOTALL)
+
+    tool_name = match.group(<span class="num">1</span>)   <span class="cmt"># "web_search"</span>
+    arg       = match.group(<span class="num">2</span>)   <span class="cmt"># '"AI news"'  → strips quotes → "AI news"</span>
+
+    tool = TOOLS.get(tool_name)  <span class="cmt"># looks up the Python function</span>
+    <span class="kw">return</span> tool(arg)              <span class="cmt"># calls web_search("AI news")</span></pre>
+
+  <h3>Code Sandbox Security</h3>
+  <p>The <code>code_exec</code> tool uses two layers of protection:</p>
+  <div class="two-col">
+    <div class="info-box">
+      <strong>Layer 1 — AST Analysis:</strong> Before running any code, it parses the code into an Abstract Syntax Tree. If it finds <em>any</em> attribute access (like <code>os.system</code>, <code>open()</code>, <code>__import__</code>), it rejects the code entirely.
+    </div>
+    <div class="info-box green">
+      <strong>Layer 2 — Restricted globals:</strong> Only whitelisted built-ins are available — <code>print, range, len, int, float, str, list, dict, sum, max, min, abs, round, sorted, enumerate, zip, map, filter, isinstance</code>. No <code>import</code>, no file system, no network.
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 07 ═══════════════ -->
+<div class="section">
+<div class="container">
+  <div class="section-num">Section 07</div>
+  <h2>Cache — <code>cache.py</code> (Redis)</h2>
+  <p class="lead">Redis is an in-memory database used for speed and temporary storage. In Boozo.ai it serves four different purposes.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">🔍</div>
+      <div class="card-tag">CACHE — 1 HOUR TTL</div>
+      <h4>Search Cache</h4>
+      <p>When the agent searches DuckDuckGo, the result is stored with key <code>boozo:search:{sha256hash}</code>. Next time the same query is asked, the answer is returned instantly from Redis — no HTTP request made.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🌐</div>
+      <div class="card-tag">CACHE — 24 HOUR TTL</div>
+      <h4>URL/Page Cache</h4>
+      <p>When RAG ingests a URL, the scraped text is stored with key <code>boozo:url:{sha256hash}</code>. If the same URL is ingested again within 24 hours, the cached text is used instead of re-fetching.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🧠</div>
+      <div class="card-tag">MEMORY — PERMANENT</div>
+      <h4>User Memory</h4>
+      <p>When you say "remember X", the fact is <code>RPUSH</code>-ed onto a Redis list at <code>boozo:mem:{user_id}</code>. No TTL — it lives forever. <code>recall(topic)</code> does <code>LRANGE 0 -1</code> to get all stored facts.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🛡️</div>
+      <div class="card-tag">SECURITY — 60 SEC WINDOW</div>
+      <h4>Rate Limiting</h4>
+      <p>Uses <code>INCR + EXPIRE</code> atomically via pipeline. Each request increments a counter. If counter exceeds 30 in 60 seconds, the request is blocked with HTTP 429.</p>
+    </div>
+  </div>
+
+  <h3>Rate Limiting — How INCR + EXPIRE Works</h3>
+  <pre><span class="kw">def</span> <span class="fn">check_rate_limit</span>(identifier: str):
+    key  = <span class="str">f"boozo:rl:{identifier}"</span>    <span class="cmt"># e.g. "boozo:rl:192.168.1.1"</span>
+    pipe = redis.pipeline()             <span class="cmt"># atomic batch</span>
+    pipe.incr(key)                      <span class="cmt"># increment counter (creates if not exists)</span>
+    pipe.expire(key, <span class="num">60</span>)               <span class="cmt"># reset after 60 seconds</span>
+    count = pipe.execute()[<span class="num">0</span>]          <span class="cmt"># [count_result, expire_result][0]</span>
+    <span class="kw">return</span> count <= <span class="num">30</span>, count          <span class="cmt"># (allowed, current_count)</span>
+
+<span class="cmt"># First request:  count=1  → allowed (1 ≤ 30)
+# 30th request:   count=30 → allowed (30 ≤ 30)
+# 31st request:   count=31 → BLOCKED (31 > 30)
+# After 60 secs:  key expires → count resets to 0</span></pre>
+
+  <h3>Graceful Fallback</h3>
+  <p>If Redis is not running (e.g., local dev without Redis installed), every Redis operation silently becomes a no-op:</p>
+  <pre><span class="kw">def</span> <span class="fn">_client</span>(self):
+    <span class="kw">try</span>:
+        r = redis.from_url(REDIS_URL, socket_connect_timeout=<span class="num">2</span>)
+        r.ping()              <span class="cmt"># test connection</span>
+        self._r = r
+    <span class="kw">except Exception</span>:
+        self._r = <span class="cls">None</span>       <span class="cmt"># Redis unavailable — just don't cache</span>
+    <span class="kw">return</span> self._r
+
+<span class="cmt"># Result: App works normally, just without caching and rate limiting</span>
+<span class="cmt"># rate limit check returns (True, 0) — everyone is allowed</span></pre>
+
+  <h3>TTL (Time To Live) — Why It Matters</h3>
+  <table>
+    <tr><th>Data</th><th>Key Pattern</th><th>TTL</th><th>Reason</th></tr>
+    <tr><td>Search results</td><td><code>boozo:search:{hash}</code></td><td>1 hour</td><td>News changes hourly; stale results are misleading</td></tr>
+    <tr><td>Scraped pages</td><td><code>boozo:url:{hash}</code></td><td>24 hours</td><td>Web pages update slowly; safe to cache daily</td></tr>
+    <tr><td>User memory</td><td><code>boozo:mem:{user_id}</code></td><td>Never</td><td>Personal preferences must persist forever</td></tr>
+    <tr><td>Rate limit counter</td><td><code>boozo:rl:{id}</code></td><td>60 seconds</td><td>Fixed window resets every minute</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 08 ═══════════════ -->
+<div class="section">
+<div class="container">
+  <div class="section-num">Section 08</div>
+  <h2>Database — <code>db.py</code> (SQLite)</h2>
+  <p class="lead">SQLite is a file-based SQL database. All users, sessions, and messages are stored permanently here. Unlike Redis, this data survives forever.</p>
+
+  <h3>The Three Tables</h3>
+  <pre><span class="cmt">-- users: one row per Google account</span>
+<span class="kw">CREATE TABLE</span> users (
+    id         TEXT <span class="kw">PRIMARY KEY</span>,    <span class="cmt">-- Google's unique user ID ("sub")</span>
+    email      TEXT <span class="kw">UNIQUE NOT NULL</span>, <span class="cmt">-- aryan@gmail.com</span>
+    name       TEXT,                  <span class="cmt">-- "Aryan"</span>
+    avatar     TEXT,                  <span class="cmt">-- Google profile picture URL</span>
+    created_at TEXT                   <span class="cmt">-- "2025-07-04 12:00:00"</span>
+);
+
+<span class="cmt">-- sessions: each "chat" is one session</span>
+<span class="kw">CREATE TABLE</span> sessions (
+    id         TEXT <span class="kw">PRIMARY KEY</span>,    <span class="cmt">-- UUID like "a3f7b2d1-..."</span>
+    user_id    TEXT <span class="kw">NOT NULL</span>,       <span class="cmt">-- foreign key → users.id</span>
+    title      TEXT <span class="kw">DEFAULT</span> <span class="str">'New Chat'</span>, <span class="cmt">-- auto-set from first message</span>
+    created_at TEXT,
+    updated_at TEXT,
+    <span class="kw">FOREIGN KEY</span> (user_id) <span class="kw">REFERENCES</span> users(id) <span class="kw">ON DELETE CASCADE</span>
+);
+
+<span class="cmt">-- messages: every single chat message</span>
+<span class="kw">CREATE TABLE</span> messages (
+    id         <span class="cls">INTEGER</span> <span class="kw">PRIMARY KEY AUTOINCREMENT</span>,
+    session_id TEXT <span class="kw">NOT NULL</span>,
+    role       TEXT <span class="kw">CHECK</span>(role <span class="kw">IN</span> (<span class="str">'user'</span>, <span class="str">'assistant'</span>)),
+    content    TEXT <span class="kw">NOT NULL</span>,
+    created_at TEXT,
+    <span class="kw">FOREIGN KEY</span> (session_id) <span class="kw">REFERENCES</span> sessions(id) <span class="kw">ON DELETE CASCADE</span>
+);</pre>
+
+  <h3>Auto-Title Feature</h3>
+  <p>When you start a new session, it's called "New Chat". After you send the first message, the session is automatically renamed to the first 52 characters of that message:</p>
+  <pre><span class="kw">def</span> <span class="fn">auto_title</span>(session_id, user_id):
+    <span class="cmt"># Only renames if still "New Chat"</span>
+    <span class="kw">if</span> sess[<span class="str">"title"</span>] == <span class="str">"New Chat"</span>:
+        first_msg = get_first_user_message(session_id)
+        title = first_msg[:<span class="num">52</span>].strip()
+        <span class="kw">if</span> len(first_msg) > <span class="num">52</span>: title += <span class="str">"…"</span>
+        <span class="cmt"># "What is the difference between TCP and UDP?" → "What is the difference between TCP and UDP?…"</span>
+        rename_session(session_id, title)</pre>
+
+  <h3>Ownership Verification</h3>
+  <p>Every session operation checks that the session belongs to the requesting user. You cannot read, rename, or delete another user's sessions:</p>
+  <pre><span class="kw">def</span> <span class="fn">get_messages</span>(session_id, user_id):
+    <span class="cmt"># First: verify ownership</span>
+    owns = db.execute(
+        <span class="str">"SELECT 1 FROM sessions WHERE id=? AND user_id=?"</span>,
+        (session_id, user_id)
+    ).fetchone()
+
+    <span class="kw">if not</span> owns:
+        <span class="kw">return None</span>   <span class="cmt"># → HTTP 404 (don't reveal it exists)</span>
+
+    <span class="cmt"># Then: return messages</span>
+    <span class="kw">return</span> db.execute(<span class="str">"SELECT * FROM messages WHERE session_id=?"</span>, ...)</pre>
+
+  <h3>ON DELETE CASCADE</h3>
+  <div class="info-box green">
+    <strong>Cascade means:</strong> If a user is deleted → all their sessions are deleted automatically. If a session is deleted → all its messages are deleted automatically. You never have orphaned messages with no parent session.
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 09 ═══════════════ -->
+<div class="section">
+<div class="container">
+  <div class="section-num">Section 09</div>
+  <h2>Full Request Journey — A to Z</h2>
+  <p class="lead">You type "What is the weather in Tokyo and plot it?" and click Send. Here is exactly what happens in the next 2 seconds:</p>
+
+  <div class="trace">
+    <div class="trace-header">Timeline — "What is the weather in Tokyo and plot it?"</div>
+    <div class="trace-row">
+      <div class="trace-time">T=0ms</div>
+      <div class="trace-who fe">BROWSER</div>
+      <div class="trace-what">fetch POST /chat with JSON body {message: "...", history: []}</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=2ms</div>
+      <div class="trace-who srv">FastAPI</div>
+      <div class="trace-what">Receives request. Validates: not empty, not over 4000 chars.</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=3ms</div>
+      <div class="trace-who redis">Redis</div>
+      <div class="trace-what">INCR boozo:rl:192.168.1.1 → count=1. Allowed (1 ≤ 30).</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=5ms</div>
+      <div class="trace-who ag">Agent</div>
+      <div class="trace-what">run_agent() starts. iteration=1. Builds prompt (system + message). ~2000 tokens.</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=10ms</div>
+      <div class="trace-who llm">Groq</div>
+      <div class="trace-what">POST to api.groq.com with stream=True. Starts receiving tokens.</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=200ms</div>
+      <div class="trace-who llm">Groq</div>
+      <div class="trace-what">Streams: "Thought: I need to get the weather for Tokyo."</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=350ms</div>
+      <div class="trace-who llm">Groq</div>
+      <div class="trace-what">Streams: "Action: get_weather(Tokyo)"</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=360ms</div>
+      <div class="trace-who ag">Agent</div>
+      <div class="trace-what">parse_llm_output() extracts action="get_weather(Tokyo)". Calls dispatch_tool().</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=370ms</div>
+      <div class="trace-who tool">tools.py</div>
+      <div class="trace-what">get_weather("Tokyo") → HTTP GET wttr.in/Tokyo?format=4</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=650ms</div>
+      <div class="trace-who tool">tools.py</div>
+      <div class="trace-what">Returns: "Tokyo: Sunny +28°C ↑ Wind: 8km/h"</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=660ms</div>
+      <div class="trace-who ag">Agent</div>
+      <div class="trace-what">Appends to scratchpad. Yields {type:"observation"}. iteration=2 starts.</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=700ms</div>
+      <div class="trace-who llm">Groq</div>
+      <div class="trace-what">New prompt with scratchpad. LLM sees the weather data.</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=900ms</div>
+      <div class="trace-who llm">Groq</div>
+      <div class="trace-what">Streams: "Action: plot({...chart json...})"</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=920ms</div>
+      <div class="trace-who tool">tools.py</div>
+      <div class="trace-what">plot() validates JSON spec. Returns "CHART:{...json...}"</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=930ms</div>
+      <div class="trace-who ag">Agent</div>
+      <div class="trace-what">Detects "CHART:" prefix. Yields {type:"chart", content:{...}}. iteration=3.</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=1100ms</div>
+      <div class="trace-who llm">Groq</div>
+      <div class="trace-what">Streams: "Final Answer: Here is the weather in Tokyo: Sunny 28°C..."</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=1120ms</div>
+      <div class="trace-who ag">Agent</div>
+      <div class="trace-what">Detects "Final Answer:". Starts yielding {type:"answer_token"} per token.</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=1120ms+</div>
+      <div class="trace-who fe">BROWSER</div>
+      <div class="trace-what">Receives answer_token events. Text appears character by character in the chat.</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=1500ms</div>
+      <div class="trace-who ag">Agent</div>
+      <div class="trace-what">Yields {type:"done"}. Generator exits. SSE connection closes.</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-time">T=1502ms</div>
+      <div class="trace-who fe">BROWSER</div>
+      <div class="trace-what">Runs marked.parse() + DOMPurify.sanitize(). Renders Chart.js chart. Done.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 10 ═══════════════ -->
+<div class="section">
+<div class="container">
+  <div class="section-num">Section 10</div>
+  <h2>Markdown Rendering Pipeline</h2>
+  <p class="lead">The AI's raw text output is converted to beautiful formatted HTML in 4 steps.</p>
+
+  <ul class="steps">
+    <li>
+      <div class="step-n">1</div>
+      <div class="step-body">
+        <h5>Agent outputs raw Markdown text</h5>
+        <p>The LLM naturally writes formatted text: headings with <code>##</code>, bold with <code>**</code>, code blocks with backticks, bullet lists with <code>-</code>, tables with pipes <code>|</code>.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-n">2</div>
+      <div class="step-body">
+        <h5>marked.js converts Markdown → HTML</h5>
+        <p><code>marked.parse(text)</code> transforms the raw string. <code>**bold**</code> becomes <code>&lt;strong&gt;bold&lt;/strong&gt;</code>. A code block becomes <code>&lt;pre&gt;&lt;code class="language-python"&gt;...&lt;/code&gt;&lt;/pre&gt;</code>.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-n">3</div>
+      <div class="step-body">
+        <h5>DOMPurify strips dangerous HTML</h5>
+        <p><code>DOMPurify.sanitize(html)</code> removes any <code>&lt;script&gt;</code>, <code>onerror=</code>, <code>javascript:</code> or other XSS vectors. Safe tags like <code>&lt;strong&gt;</code>, <code>&lt;code&gt;</code>, <code>&lt;table&gt;</code> are kept.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-n">4</div>
+      <div class="step-body">
+        <h5>highlight.js + addCopyButtons() finish the job</h5>
+        <p>highlight.js scans for <code>&lt;code&gt;</code> blocks and adds color-coded syntax classes (keywords, strings, etc.). <code>addCopyButtons()</code> adds a "Copy" button to each code block.</p>
+      </div>
+    </li>
+  </ul>
+
+  <h3>Before and After Example</h3>
+  <div class="md-demo">
+    <div class="raw">
+      <h5>Raw AI Output</h5>
+      <pre>## Binary Search
+
+A fast search algorithm.
+
+**Time complexity:** O(log n)
+
+```python
+def binary_search(arr, target):
+    lo, hi = 0, len(arr)-1
+    while lo <= hi:
+        mid = (lo+hi)//2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            lo = mid+1
+        else:
+            hi = mid-1
+    return -1
+```
+
+- Works on **sorted** arrays only
+- Halves the search space each step</pre>
+    </div>
+    <div class="rendered">
+      <h5>Rendered in Browser</h5>
+      <div class="md-rendered">
+        <h2>Binary Search</h2>
+        <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:10px;">A fast search algorithm.</p>
+        <p style="font-size:0.85rem;margin-bottom:10px;"><strong>Time complexity:</strong> <code>O(log n)</code></p>
+        <div style="background:#0d0d1f;border:1px solid #1e1e3a;border-radius:8px;padding:12px 14px;font-family:monospace;font-size:0.78rem;color:#c3e88d;margin-bottom:10px;position:relative;">
+          <span style="position:absolute;top:8px;right:10px;font-size:0.68rem;color:#546e7a;cursor:pointer;background:#1e1e3a;padding:2px 8px;border-radius:4px;">Copy</span>
+          <div>def binary_search(arr, target):</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;lo, hi = 0, len(arr)-1</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;...</div>
+        </div>
+        <ul class="md-rendered">
+          <li>Works on <strong>sorted</strong> arrays only</li>
+          <li>Halves the search space each step</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box red">
+    <strong>Why DOMPurify is critical:</strong> Without it, if an AI model was ever tricked into including <code>&lt;script&gt;document.cookie&lt;/script&gt;</code> in its response, that code would run in your browser and steal your session cookie. DOMPurify prevents this entirely by stripping all script tags before injection.
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 11 ═══════════════ -->
+<div class="section">
+<div class="container">
+  <div class="section-num">Section 11</div>
+  <h2>RAG — ChromaDB Vector Search</h2>
+  <p class="lead">RAG stands for Retrieval-Augmented Generation. It lets the AI search through documents you've given it — beyond its training data.</p>
+
+  <h3>How a Vector Database Works</h3>
+  <p>Normal databases search by exact keywords. ChromaDB uses <strong>embeddings</strong> — every piece of text is converted to a list of ~384 numbers (a vector) that represents its meaning. Similar meanings = similar vectors.</p>
+
+  <div class="two-col">
+    <div class="info-box">
+      <strong>Example:</strong> "How does memory management work in Python?" and "Python garbage collection explained" have very different words, but their meaning-vectors are close together. <code>rag_search</code> finds both even if your ingested document used different words than your query.
+    </div>
+    <div class="info-box green">
+      <strong>Model used:</strong> <code>all-MiniLM-L6-v2</code> from sentence-transformers. It converts any text to a 384-dimensional vector. It runs locally — no API key needed, no data sent externally.
+    </div>
+  </div>
+
+  <h3>Chunking — Why We Split Text</h3>
+  <pre><span class="cmt"># A 10,000-word article is split into manageable pieces</span>
+chunk_size = <span class="num">300</span>   <span class="cmt"># characters per chunk</span>
+overlap    = <span class="num">50</span>    <span class="cmt"># characters shared between consecutive chunks</span>
+
+<span class="cmt"># Text: "Python is a programming language. It was created by..."
+# Chunk 0: "Python is a programming language. It was created by Guido van..."
+# Chunk 1: "...Guido van Rossum in 1991. Python emphasizes readability..."
+# Chunk 2: "...readability and uses indentation to define code blocks..."</span>
+
+<span class="cmt"># Overlap prevents important context from being split at boundaries</span></pre>
+
+  <h3>Persistent Storage</h3>
+  <p>ChromaDB uses <code>PersistentClient</code> — data is saved to disk in the <code>DATA_DIR/chroma/</code> directory. If the server restarts, all ingested documents are still there. No re-ingesting needed.</p>
+
+  <div class="info-box amber">
+    <strong>Lazy loading:</strong> ChromaDB (and its sentence-transformer model) is only loaded on the first actual use — not on server startup. This prevents a 30-second hang when the server starts, because downloading the embedding model takes time.
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 12 ═══════════════ -->
+<div class="section">
+<div class="container">
+  <div class="section-num">Section 12</div>
+  <h2>Security — What Protects the App</h2>
+  <p class="lead">Multiple layers of security are built in at every level.</p>
+
+  <table>
+    <tr><th>Threat</th><th>Where it's blocked</th><th>How</th></tr>
+    <tr>
+      <td>XSS (Cross-Site Scripting)</td>
+      <td>Frontend — <code>index.html</code></td>
+      <td><code>DOMPurify.sanitize()</code> strips all script tags before injecting AI response into DOM</td>
+    </tr>
+    <tr>
+      <td>Code injection via code_exec</td>
+      <td><code>tools.py</code> — <code>code_exec()</code></td>
+      <td>AST check rejects attribute access; restricted globals whitelist prevents imports</td>
+    </tr>
+    <tr>
+      <td>Math expression injection via calculator</td>
+      <td><code>tools.py</code> — <code>calculator()</code></td>
+      <td>Regex allows only <code>0-9 + - * / ( ) . % **</code> before evaluation; runs in isolated subprocess</td>
+    </tr>
+    <tr>
+      <td>Rate abuse / DDoS</td>
+      <td><code>main.py</code> + <code>cache.py</code></td>
+      <td>30 requests/minute per user (by Google ID) or IP. Redis INCR+EXPIRE atomic counter.</td>
+    </tr>
+    <tr>
+      <td>Empty or oversized messages</td>
+      <td><code>main.py</code></td>
+      <td>HTTP 400 if empty or > 4000 characters</td>
+    </tr>
+    <tr>
+      <td>Accessing another user's sessions</td>
+      <td><code>db.py</code> — all session functions</td>
+      <td>Every query includes <code>AND user_id = ?</code>. Returns None (→ 404) if no match.</td>
+    </tr>
+    <tr>
+      <td>Session hijacking</td>
+      <td><code>main.py</code> — <code>SessionMiddleware</code></td>
+      <td>Cookie is HMAC-signed with <code>SECRET_KEY</code>. Tampered cookies are rejected.</td>
+    </tr>
+    <tr>
+      <td>SQL injection</td>
+      <td><code>db.py</code></td>
+      <td>All queries use parameterized statements (<code>?, ?, ?</code>) — never string concatenation.</td>
+    </tr>
+    <tr>
+      <td>Agent prompt injection</td>
+      <td><code>prompts.py</code> + <code>agent.py</code></td>
+      <td>MAX_ITERATIONS=5 prevents infinite loops. Strict output format makes injection harder to hide.</td>
+    </tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SECTION 13 ═══════════════ -->
+<div class="section">
+<div class="container">
+  <div class="section-num">Section 13</div>
+  <h2>SSE Events — What the Frontend Receives</h2>
+  <p class="lead">The agent sends structured JSON events over the SSE stream. The frontend handles each type differently.</p>
+
+  <table>
+    <tr><th>Event type</th><th>Example payload</th><th>What the frontend does</th></tr>
+    <tr><td><code>iteration</code></td><td><code>{n: 1, max: 5}</code></td><td>Shows "Thinking... (step 1/5)" indicator</td></tr>
+    <tr><td><code>tokens</code></td><td><code>{used: 512, limit: 8192}</code></td><td>Shows token usage bar</td></tr>
+    <tr><td><code>thought</code></td><td><code>{content: "I need to search..."}</code></td><td>Shows collapsible "Thought" bubble in chat</td></tr>
+    <tr><td><code>action</code></td><td><code>{content: "web_search(Python)"}</code></td><td>Shows "Using tool: web_search" indicator</td></tr>
+    <tr><td><code>observation</code></td><td><code>{content: "- Python is..."}</code></td><td>Shows collapsible "Observation" result</td></tr>
+    <tr><td><code>answer_token</code></td><td><code>{content: "The"}</code></td><td>Appends token to answer bubble — creates typing effect</td></tr>
+    <tr><td><code>chart</code></td><td><code>{content: {"type":"bar",...}}</code></td><td>Creates a Chart.js canvas and renders the chart</td></tr>
+    <tr><td><code>model_used</code></td><td><code>{content: "groq:llama-3.3-70b"}</code></td><td>Shows small "Powered by groq" label</td></tr>
+    <tr><td><code>timing</code></td><td><code>{who: "llm", ms: 843}</code></td><td>Shows timing stats (LLM: 843ms)</td></tr>
+    <tr><td><code>done</code></td><td><code>{content: "full answer text"}</code></td><td>Finalizes the answer, saves to history, enables input again</td></tr>
+    <tr><td><code>error</code></td><td><code>{content: "All LLM providers failed"}</code></td><td>Shows red error message in chat</td></tr>
+    <tr><td><code>scratchpad</code></td><td><code>{content: "Thought:...\nAction:..."}</code></td><td>Updates hidden debug panel (if open)</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p style="margin-bottom:8px;">Boozo.ai — Built from scratch. No LangChain. Pure Python + FastAPI.</p>
+  <p>
+    <a href="/">Home</a> &nbsp;|&nbsp;
+    <a href="/static/flowchart.html">Flowchart</a> &nbsp;|&nbsp;
+    <a href="/static/api-breakdown.html">API Breakdown</a> &nbsp;|&nbsp;
+    <a href="/static/no-langchain.html">No LangChain</a> &nbsp;|&nbsp;
+    <a href="/static/ai-concepts.html">AI Concepts</a>
+  </p>
+</footer>
+
+</body>
+</html>
