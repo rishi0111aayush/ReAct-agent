@@ -45,14 +45,17 @@ def calculator(expr: str) -> str:
     if not re.match(r"^[\d\s\+\-\*\/\(\)\.\%\*\*]+$", expr):
         return "Error: only basic math operators allowed (+, -, *, /, **, %, parentheses)"
     try:
-        result = subprocess.run(  # noqa: S603
-            [sys.executable, "-c",
-             f"print(eval(compile({repr(expr)}, '<string>', 'eval'), {{'__builtins__': {{}}}}))"],
-            capture_output=True, text=True, timeout=2,
-        )
-        if result.returncode != 0:
-            return f"Error: {result.stderr.strip()}"
-        return result.stdout.strip()
+        # Validate AST to allow only numeric literals and safe operators
+        node = ast.parse(expr, mode='eval')
+        for n in ast.walk(node):
+            if isinstance(n, (ast.Call, ast.Attribute, ast.Subscript, ast.Name, ast.Lambda, ast.FunctionDef, ast.ClassDef, ast.Import, ast.ImportFrom)):
+                return "Error: disallowed expression"
+            if isinstance(n, ast.BinOp) and not isinstance(n.op, (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow)):
+                return "Error: disallowed operator"
+            if isinstance(n, ast.UnaryOp) and not isinstance(n.op, (ast.UAdd, ast.USub)):
+                return "Error: disallowed operator"
+        result_value = eval(compile(node, '<string>', 'eval'), {'__builtins__': {}}, {})
+        return str(result_value)
     except subprocess.TimeoutExpired:
         return "Error: expression took too long to evaluate"
     except Exception as e:
